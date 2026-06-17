@@ -1,0 +1,13 @@
+## Interface: 110207, 110205, 110200, 120000
+## Title: Mythic HandHolding
+## Notes: One-click party-chat callouts for Mythic+ bosses, interrupts, and tips.
+## Author: CernalGhost
+## Version: 1.0.32
+## SavedVariables: MythicHandHoldingDB
+## IconTexture: 134400
+## Category-enUS: PvE
+## X-Curse-Project-ID: 0
+## X-Wago-ID:
+## X-Website: https://github.com/CernalGhost/MythicHandHolding
+
+MythicHandHolding.lua
