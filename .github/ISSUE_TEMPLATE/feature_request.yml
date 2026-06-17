@@ -1,0 +1,28 @@
+name: Feature request
+description: Suggest an improvement or new callout
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem / use case
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: Include exact party-chat lines if adding dungeon content
+    validations:
+      required: true
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Area
+      options:
+        - label: New dungeon / season content
+        - label: Boss or interrupt callouts
+        - label: UI / minimap button
+        - label: Auto-detect on zone-in
+        - label: Other

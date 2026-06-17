@@ -57,6 +57,10 @@ Enable **Load out of date AddOns** if the Interface number lags a patch.
 AI/developer notes for this addon live in the parent workspace:  
 `docs-for-ai-agents/README_for_AI_AGENTS.md` (chat architecture is fragile — read before editing).
 
+## Contributing
+
+Bug reports, feature ideas, and pull requests are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md).
+
 ## License
 
 MIT — see [LICENSE](LICENSE).
