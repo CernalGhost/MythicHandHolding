@@ -3,7 +3,7 @@
 A World of Warcraft **retail** addon for **Midnight Season 1 Mythic+**. One compact window, one click per party-chat callout — interrupts, boss mechanics, and dungeon tips.
 
 **Author:** CernalGhost  
-**Version:** 1.0.32  
+**Version:** 1.0.33  
 **Slash command:** `/mhh` or `/mythichandholding`
 
 ---

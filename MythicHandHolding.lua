@@ -10,7 +10,7 @@
 --      new IDs can be copy/pasted into BOSS_IDS.
 --=====================================================================
 
-local VERSION  = "1.0.32"
+local VERSION  = "1.0.33"
 
 MythicHandHoldingDB = MythicHandHoldingDB or {}
 
@@ -956,18 +956,19 @@ local function BuildSectionMacro(visibleButton, section, lineIdx)
   if InCombatLockdown() then return end
   local slash = CurrentChatSlash()
   local lines = GetBroadcastLines(section)
+  visibleButton._broadcastLines = lines
+
+  lineIdx = lineIdx or visibleButton._lineIdx or 1
+  if #lines > 0 then
+    if lineIdx < 1 or lineIdx > #lines then lineIdx = 1 end
+    visibleButton._lineIdx = lineIdx
+  end
 
   if not slash or #lines == 0 or MythicHandHoldingDB.testMode then
     visibleButton:SetAttribute("type", "macro")
     visibleButton:SetAttribute("macrotext", "")
-    visibleButton._broadcastLines = lines
     return
   end
-
-  lineIdx = lineIdx or visibleButton._lineIdx or 1
-  if lineIdx < 1 or lineIdx > #lines then lineIdx = 1 end
-  visibleButton._lineIdx = lineIdx
-  visibleButton._broadcastLines = lines
 
   visibleButton:SetAttribute("type", "macro")
   visibleButton:SetAttribute("macrotext", FitMacroLine(slash, lines[lineIdx]))

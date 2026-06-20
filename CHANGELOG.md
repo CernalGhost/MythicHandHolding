@@ -1,5 +1,9 @@
 # MythicHandHolding - Changelog
 
+## 1.0.33
+
+- Fix multi-line section cycling in Test Mode (line index was not advancing).
+
 ## 1.0.32
 
 - Line badges show lines sent (`0/N` until clicked) instead of next line index.
