@@ -10,7 +10,7 @@
 --      new IDs can be copy/pasted into BOSS_IDS.
 --=====================================================================
 
-local VERSION  = "1.0.34"
+local VERSION  = "1.0.35"
 
 MythicHandHoldingDB = MythicHandHoldingDB or {}
 
@@ -1086,7 +1086,7 @@ local function BuildUI()
   end)
 
   local title = f:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-  title:SetPoint("TOPLEFT", FRAME_PAD, -6); title:SetText("Mythic HandHolding")
+  title:SetPoint("TOPLEFT", FRAME_PAD, -6); title:SetText("Mythic Hand Holding")
   local close = CreateFrame("Button", nil, f, "UIPanelCloseButton")
   close:SetPoint("TOPRIGHT", -2, -2); close:SetSize(24, 24)
 
@@ -1373,7 +1373,7 @@ local function BuildMinimapButton()
 
   b:SetScript("OnEnter", function(self)
     GameTooltip:SetOwner(self, "ANCHOR_LEFT")
-    GameTooltip:SetText("Mythic HandHolding", 1, 1, 1)
+    GameTooltip:SetText("Mythic Hand Holding", 1, 1, 1)
     GameTooltip:AddLine("Left-click: toggle window.", 0.8, 0.8, 0.8)
     GameTooltip:AddLine("Right-click: hide this button.", 0.8, 0.8, 0.8)
     GameTooltip:Show()

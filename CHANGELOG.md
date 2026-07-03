@@ -1,4 +1,9 @@
-# MythicHandHolding - Changelog
+# Mythic Hand Holding - Changelog
+
+## 1.0.35
+
+- Renamed display title to **Mythic Hand Holding** (addon list, window, minimap
+  tooltip). Folder and slash commands unchanged (`MythicHandHolding`, `/mhh`).
 
 ## 1.0.34
 

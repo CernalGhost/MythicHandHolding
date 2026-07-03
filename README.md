@@ -1,10 +1,11 @@
-# Mythic HandHolding
+# Mythic Hand Holding
 
 A World of Warcraft **retail** addon for **Midnight Season 1 Mythic+**. One compact window, one click per party-chat callout — interrupts, boss mechanics, and dungeon tips.
 
 **Author:** CernalGhost  
-**Version:** 1.0.33  
-**Slash command:** `/mhh` or `/mythichandholding`
+**Version:** 1.0.35  
+**Slash command:** `/mhh` or `/mythichandholding`  
+**Download:** [CurseForge (preview — moderation)](https://www.curseforge.com/wow/addons/mythic-hand-holding/preview) · [GitHub](https://github.com/CernalGhost/MythicHandHolding)
 
 ---
 

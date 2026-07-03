@@ -1,12 +1,12 @@
-# Contributing to Mythic HandHolding
+# Contributing to Mythic Hand Holding
 
-Thanks for helping improve Mythic HandHolding. This project is open to bug reports, feature ideas, and pull requests.
+Thanks for helping improve Mythic Hand Holding. This project is open to bug reports, feature ideas, and pull requests.
 
 ## Before you start
 
 - Search [existing issues](https://github.com/CernalGhost/MythicHandHolding/issues) to avoid duplicates.
 - For gameplay questions, use [Discussions](https://github.com/CernalGhost/MythicHandHolding/discussions) or open an issue with the **question** label.
-- Mythic HandHolding is a **retail** addon for Mythic+ party/instance chat callouts.
+- Mythic Hand Holding is a **retail** addon for Mythic+ party/instance chat callouts.
 
 ## Reporting bugs
 

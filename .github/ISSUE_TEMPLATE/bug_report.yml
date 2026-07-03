@@ -10,7 +10,7 @@ body:
   - type: input
     id: version
     attributes:
-      label: Mythic HandHolding version
+      label: Mythic Hand Holding version
       description: Output of `/mhh ping`
       placeholder: "1.0.32"
     validations:
