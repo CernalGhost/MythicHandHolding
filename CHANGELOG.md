@@ -1,5 +1,9 @@
 # Mythic Hand Holding - Changelog
 
+## 1.0.36
+
+- Set `X-Curse-Project-ID` so GitHub Actions can upload releases to CurseForge.
+
 ## 1.0.35
 
 - Renamed display title to **Mythic Hand Holding** (addon list, window, minimap
