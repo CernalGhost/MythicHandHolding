@@ -1,5 +1,10 @@
 # MythicHandHolding - Changelog
 
+## 1.0.34
+
+- Bumped `## Interface:` for retail 12.0.7 (`120007`) and PTR 12.1.0
+  (`120100`).
+
 ## 1.0.33
 
 - Fix multi-line section cycling in Test Mode (line index was not advancing).

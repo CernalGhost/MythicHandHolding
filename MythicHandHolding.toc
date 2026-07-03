@@ -1,8 +1,8 @@
-## Interface: 110207, 110205, 110200, 120000
+## Interface: 110207, 110205, 110200, 120000, 120005, 120007, 120100
 ## Title: Mythic HandHolding
 ## Notes: One-click party-chat callouts for Mythic+ bosses, interrupts, and tips.
 ## Author: CernalGhost
-## Version: 1.0.33
+## Version: 1.0.34
 ## SavedVariables: MythicHandHoldingDB
 ## IconTexture: 134400
 ## Category-enUS: PvE

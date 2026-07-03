@@ -10,7 +10,7 @@
 --      new IDs can be copy/pasted into BOSS_IDS.
 --=====================================================================
 
-local VERSION  = "1.0.33"
+local VERSION  = "1.0.34"
 
 MythicHandHoldingDB = MythicHandHoldingDB or {}
 
