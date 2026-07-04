@@ -362,18 +362,19 @@ local BOSS_IDS = {
 
 -- Raid boss names use active raid difficulty for journal links (not 23).
 local RAID_BOSS_NAMES = {}
+local RAID_SPELL_IDS = {}       -- full Adventure Guide dump (reference)
+local RAID_SPELL_LINKABLE = {}  -- only names that appear in tip text
 local RAID_SPELL_BY_DIFF = {}
 
 -- Merge optional raid pack (MythicHandHolding_Raids.lua, alpha issue #2).
+-- Raid spells stay separate so M+ IDs (e.g. Blinding Light) are not overwritten.
 local RAIDS = {}
 if MHH_Raids then
   for name, id in pairs(MHH_Raids.bossIds or {}) do
     BOSS_IDS[name] = id
     RAID_BOSS_NAMES[name] = true
   end
-  for name, id in pairs(MHH_Raids.spellIds or {}) do
-    SPELL_IDS[name] = id
-  end
+  RAID_SPELL_IDS = MHH_Raids.spellIds or {}
   RAID_SPELL_BY_DIFF = MHH_Raids.spellIdsByDiff or {}
   RAIDS = MHH_Raids.raids or {}
 end
@@ -405,6 +406,11 @@ end
 local function ActiveSpellId(name)
   local byDiff = RAID_SPELL_BY_DIFF[GetActiveRaidDifficulty()]
   if byDiff and byDiff[name] then return byDiff[name] end
+  -- Raid tips: only hyperlink spells that appear in callout text.
+  if (MythicHandHoldingDB.contentMode or "mplus") == "raid" then
+    if RAID_SPELL_LINKABLE[name] then return RAID_SPELL_LINKABLE[name] end
+    return SPELL_IDS[name]
+  end
   return SPELL_IDS[name]
 end
 
@@ -900,7 +906,34 @@ end
 
 -- Pre-sort lookup keys longest-first so "Frost Nova" matches before "Frost".
 local _spellNamesByLen, _bossNamesByLen
+local function RebuildRaidSpellLinkable()
+  wipe(RAID_SPELL_LINKABLE)
+  local names = {}
+  for n in pairs(RAID_SPELL_IDS) do names[#names + 1] = n end
+  table.sort(names, function(a, b) return #a > #b end)
+  local function consider(line)
+    if not line or line == "" then return end
+    for _, name in ipairs(names) do
+      local pat = "%f[%w]" .. PatEsc(name) .. "%f[%W]"
+      if line:find(pat) then
+        RAID_SPELL_LINKABLE[name] = RAID_SPELL_IDS[name]
+      end
+    end
+  end
+  for _, raid in ipairs(RAIDS) do
+    for _, sec in ipairs(raid.sections or {}) do
+      for _, line in ipairs(sec.lines or {}) do consider(line) end
+      if sec.extraByDiff then
+        for _, lines in pairs(sec.extraByDiff) do
+          for _, line in ipairs(lines) do consider(line) end
+        end
+      end
+    end
+  end
+end
+
 local function RebuildLookupOrder()
+  RebuildRaidSpellLinkable()
   local spellSeen = {}
   _spellNamesByLen = {}
   local function addSpellName(n)
@@ -910,6 +943,7 @@ local function RebuildLookupOrder()
     end
   end
   for n in pairs(SPELL_IDS) do addSpellName(n) end
+  for n in pairs(RAID_SPELL_LINKABLE) do addSpellName(n) end
   for _, map in pairs(RAID_SPELL_BY_DIFF) do
     for n in pairs(map) do addSpellName(n) end
   end
