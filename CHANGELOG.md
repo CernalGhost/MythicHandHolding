@@ -1,12 +1,23 @@
 # Mythic Hand Holding - Changelog
 
+## 1.1.0-alpha.2 (issue #2 — raids alpha)
+
+- **Sporefall** (patch 12.0.7): Rotmire single-boss raid with Normal/Heroic/Mythic tip variants.
+- **Raid difficulty UI:** LFR / N / H / M buttons; auto-detects when you zone into a raid.
+- **Difficulty-specific tips:** `extraByDiff` lines append for the active difficulty; journal links use it too.
+- **Adventure Guide dumps (no need to be inside the raid):**
+  - `/mhh ej list` — list raid instances
+  - `/mhh ej <name|id>` — boss encounter IDs
+  - `/mhh ej spells <boss|id>` — ability spell IDs
+  - `/mhh ej diff` / `/mhh diff` — set journal difficulty for dumps and callouts
+
 ## 1.1.0-alpha.1 (issue #2 — raids alpha)
 
 - **Raid mode (alpha):** M+ / Raid toggle in the window; auto-selects raids on zone-in.
 - **Midnight S1 raids:** The Voidspire (6 bosses), The Dreamrift (Chimaerus), March on Quel'Danas (Belo'ren, Midnight Falls).
 - **Data split:** `MythicHandHolding_Raids.lua` holds raid tips, boss encounter IDs, and future tier packs.
 - **New commands:** `/mhh mplus`, `/mhh raid` switch content mode.
-- Encounter/spell IDs are placeholders until verified in-game with `/mhh ej`.
+- Encounter/spell IDs are placeholders until verified with `/mhh ej`.
 
 ## 1.0.36
 

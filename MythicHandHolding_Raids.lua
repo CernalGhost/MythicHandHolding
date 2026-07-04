@@ -1,14 +1,22 @@
 --=====================================================================
 --  MythicHandHolding — Raid content (alpha, issue #2)
---  Midnight Season 1: The Voidspire, The Dreamrift, March on Quel'Danas.
---  Verify encounter IDs in-game with /mhh ej while inside each raid.
---  Sources: Wowhead encounter journals, Icy Veins, Method guides.
+--  Midnight S1: Voidspire, Dreamrift, March on Quel'Danas, Sporefall (12.0.7).
+--
+--  Fill IDs from Adventure Guide (no need to be inside the raid):
+--    /mhh ej list              — list raid instances + EJ IDs
+--    /mhh ej <name or id>      — boss encounter IDs for that raid
+--    /mhh ej spells <boss|id>  — ability/spell IDs for one boss
+--    /mhh ej diff <14|15|16|17>— journal difficulty for dumps (N/H/M/LFR)
+--
+--  Section optional field:
+--    extraByDiff = { [15] = { "Heroic-only tip" }, [16] = { "Mythic-only tip" } }
+--  Journal difficulty IDs: 17=LFR, 14=Normal, 15=Heroic, 16=Mythic.
 --=====================================================================
 
 MHH_Raids = {
-  journalDiff = 14,  -- Normal raid journal links (dungeons use 23)
+  journalDiff = 14,  -- default Normal raid journal links (dungeons use 23)
 
-  -- Encounter IDs — confirm with /mhh ej; wrong IDs fall back to plain text.
+  -- Encounter IDs — placeholders until /mhh ej confirms; wrong IDs = plain text.
   bossIds = {
     ["Imperator Averzian"]       = 3120,
     ["Vorasius"]                  = 3121,
@@ -25,11 +33,16 @@ MHH_Raids = {
     ["Belo'ren"]                  = 3127,
     ["Midnight Falls"]            = 3128,
     ["L'ura"]                     = 3128,
+    ["Rotmire"]                   = 3129,
   },
 
+  -- Base spell IDs (all difficulties). Prefer /mhh ej spells <boss>.
   spellIds = {
-    -- Shared spells already in MythicHandHolding.lua link automatically.
-    -- Add verified raid-specific spell IDs here after /mhh ej in each raid.
+  },
+
+  -- Optional per-difficulty spell overrides (merged on top of spellIds).
+  -- spellIdsByDiff = { [16] = { ["Cross Fertilization"] = 12345 } },
+  spellIdsByDiff = {
   },
 
   raids = {
@@ -181,6 +194,54 @@ MHH_Raids = {
           lines = {
             "Belo'ren teaches Light/Void polarity before the L'ura finale",
             "Hero on pull — Midnight Falls is on a fixed timer; push damage in P1",
+          } },
+      },
+    },
+
+    ------------------------------------------------------------------
+    -- Sporefall (1 boss, patch 12.0.7) — Mythic flex 15–25
+    ------------------------------------------------------------------
+    {
+      name = "Sporefall",
+      tab  = "SF",
+      tier = "Midnight S1 (12.0.7)",
+      sections = {
+        { label = "Interrupts/Dispels",
+          title = "=== SPOREFALL - INT/DISP ===",
+          lines = {
+            "INTERRUPT: Poison Burst (Sporecap — Heroic+)",
+          },
+          extraByDiff = {
+            [14] = { "Normal: no Sporecap — focus Shroomling packs only" },
+            [15] = { "Heroic+: interrupt every Poison Burst on Sporecap" },
+            [16] = { "Mythic: interrupt Poison Burst; keep Shroomling/Fungling corpses 10y apart" },
+          } },
+        { label = "Rotmire",
+          boss  = "Rotmire",
+          title = "=== ROTMIRE ===",
+          lines = {
+            "Kill ALL adds before 100 energy Fungal Bloom — living adds get Fungal Frenzy (heal + immune)",
+            "Bloom: raid hit + 16s DoT + knockback; dead adds become Bursting Shrooms — kill them fast",
+            "Festering Vines targets: move to EDGE before expire (permanent puddles)",
+            "Tank swap every Putrid Fist (phys vulnerability)",
+            "Rotting Pustules stacks ramp — clean early Blooms or healing falls behind",
+          },
+          extraByDiff = {
+            [15] = {
+              "Heroic: Sporecap (blue circle) — tank boss to it, interrupt Poison Burst, kill after adds",
+              "Stack add corpses for easy Bursting Shroom AoE after Bloom",
+            },
+            [16] = {
+              "Mythic Cross Fertilization: Shroomling and Fungling corpses must stay 10y apart",
+              "Two kill piles — split raid; overlapping corpses spawn Doom Shroom (wipe)",
+              "Mythic flex 15–25 players — health/adds scale with group size",
+            },
+          } },
+        { label = "Tips",
+          title = "=== SPOREFALL TIPS ===",
+          lines = {
+            "Single-boss raid (patch 12.0.7) — Sporefused gear, no tier tokens",
+            "Plan healer CDs on each Fungal Bloom; one Bursting Shroom is survivable, two+ usually wipe",
           } },
       },
     },
