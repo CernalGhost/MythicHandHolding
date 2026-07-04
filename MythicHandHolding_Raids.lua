@@ -336,6 +336,22 @@ MHH_Raids = {
     ["Erupting Roots"] = 1235134,
     ["Rootquake"] = 1235131,
     ["War Club"] = 1235144,
+    -- Thorm'belan
+    ["Dazzling Radiance"] = 1257618,
+    ["Radiant Mote"] = 1257320,
+    ["Rending Claw"] = 1258136,
+    ["Scintillating Shard"] = 1257825,
+    ["Shard Eruption"] = 1257737,
+    ["Shredding Tendrils"] = 1258639,
+    -- Predaxas
+    ["Bestial Rage"] = 1277711,
+    ["Bilepool"] = 1277043,
+    ["Blood Nova"] = 1277694,
+    ["Devour"] = 1277829,
+    ["Regurgitation"] = 1276193,
+    ["Seismic Slam"] = 1276320,
+    ["Toxin Splatter"] = 1276988,
+    ["Voidscatter"] = 1276884,
   },
 
   -- Optional per-difficulty spell overrides (merged on top when that diff is active).
