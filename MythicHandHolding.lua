@@ -1654,9 +1654,13 @@ local function DumpEncountersForInstance(ejInstID, instName)
     instName or "?", ejInstID, RAID_DIFF_LABELS[diff] or tostring(diff)))
   local i, listed = 1, 0
   while true do
-    local name, _, encID = EJ_GetEncounterInfoByIndex(i)
+    local name, _, encID, rootSec = EJ_GetEncounterInfoByIndex(i)
     if not name then break end
-    Print(("  [\"%s\"] = %s,"):format(name, tostring(encID)))
+    if rootSec and rootSec > 0 then
+      Print(("  [\"%s\"] = %s,  -- rootSection %s"):format(name, tostring(encID), tostring(rootSec)))
+    else
+      Print(("  [\"%s\"] = %s,"):format(name, tostring(encID)))
+    end
     listed = listed + 1
     i = i + 1
     if i > 40 then break end
@@ -1768,64 +1772,214 @@ local function ListEJInstances(raidsOnly)
   Print(("listed %d.  /mhh ej <name or id> to dump bosses."):format(listed))
 end
 
-local function WalkEJSections(sectionID, depth, seen)
-  if not sectionID or sectionID == 0 or depth > 12 then return 0 end
-  if seen[sectionID] then return 0 end
+local function WalkEJSections(sectionID, depth, seen, out)
+  out = out or {}
+  if not sectionID or sectionID == 0 or depth > 16 then return out end
+  if seen[sectionID] then return out end
   seen[sectionID] = true
   local info
   if C_EncounterJournal and C_EncounterJournal.GetSectionInfo then
     info = C_EncounterJournal.GetSectionInfo(sectionID)
   end
-  local count = 0
-  if info then
+  if type(info) == "table" then
     local title = info.title or "?"
     local spellID = info.spellID
-    if spellID and spellID > 0 then
-      Print(("  [\"%s\"] = %d,"):format(title, spellID))
-      count = count + 1
-    elseif info.headerType == 0 or not info.filteredByDifficulty then
-      -- Still walk children for ability headers.
+    if spellID and spellID > 0 and not out[spellID] then
+      out[spellID] = title
     end
     if info.firstChildSectionID then
-      count = count + WalkEJSections(info.firstChildSectionID, depth + 1, seen)
+      WalkEJSections(info.firstChildSectionID, depth + 1, seen, out)
     end
     if info.siblingSectionID then
-      count = count + WalkEJSections(info.siblingSectionID, depth + 1, seen)
+      WalkEJSections(info.siblingSectionID, depth + 1, seen, out)
     end
   elseif EJ_GetSectionInfo then
-    -- Classic fallback: title, desc, headerType, abilityIcon, ..., spellID varies by patch.
-    local title, _, _, _, _, _, _, _, spellID, _, _, _, nextSec, firstChild =
+    -- Legacy multi-return form (patch-dependent order).
+    local a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14 =
       EJ_GetSectionInfo(sectionID)
-    if spellID and spellID > 0 then
-      Print(("  [\"%s\"] = %d,"):format(title or "?", spellID))
-      count = count + 1
+    local title, spellID, nextSec, firstChild
+    if type(a1) == "table" then
+      title = a1.title
+      spellID = a1.spellID
+      nextSec = a1.siblingSectionID
+      firstChild = a1.firstChildSectionID
+    else
+      title = a1
+      -- Common retail layout: spellID near the end before sibling/child.
+      spellID = a9
+      if type(spellID) ~= "number" then spellID = a10 end
+      nextSec = a13
+      firstChild = a14
     end
-    if firstChild then count = count + WalkEJSections(firstChild, depth + 1, seen) end
-    if nextSec then count = count + WalkEJSections(nextSec, depth + 1, seen) end
+    if type(spellID) == "number" and spellID > 0 and not out[spellID] then
+      out[spellID] = title or "?"
+    end
+    if firstChild then WalkEJSections(firstChild, depth + 1, seen, out) end
+    if nextSec then WalkEJSections(nextSec, depth + 1, seen, out) end
   end
-  return count
+  return out
+end
+
+-- Pull |Hspell:id|h[Name]|h links out of any fontstring under a frame.
+local function ScrapeSpellLinksFromFrame(frame, out, depth)
+  out = out or {}
+  if not frame or depth > 20 then return out end
+  local regions = { frame:GetRegions() }
+  for _, r in ipairs(regions) do
+    if r and r.GetText then
+      local text = r:GetText()
+      if text and text:find("|Hspell:", 1, true) then
+        for id, name in text:gmatch("|Hspell:(%d+)|h%[(.-)%]|h") do
+          id = tonumber(id)
+          if id and id > 0 and not out[id] then out[id] = name end
+        end
+      end
+    end
+  end
+  local kids = { frame:GetChildren() }
+  for _, child in ipairs(kids) do
+    ScrapeSpellLinksFromFrame(child, out, depth + 1)
+  end
+  return out
+end
+
+local function PrintSpellMap(spellMap)
+  local n = 0
+  local order = {}
+  for id, title in pairs(spellMap) do
+    order[#order + 1] = { id = id, title = title }
+  end
+  table.sort(order, function(a, b) return a.title < b.title end)
+  for _, e in ipairs(order) do
+    Print(("  [\"%s\"] = %d,"):format(e.title, e.id))
+    n = n + 1
+  end
+  return n
+end
+
+-- Resolve rootSectionID: instance must be selected first or EJ returns nil/0.
+local function ResolveEncounterRoot(encID)
+  local name, _, _, root, _, journalInstanceID = EJ_GetEncounterInfo(encID)
+  if root and root > 0 then return root, name, journalInstanceID end
+
+  -- Select journal instance from known pack, then retry.
+  if journalInstanceID and journalInstanceID > 0 and EJ_SelectInstance then
+    pcall(EJ_SelectInstance, journalInstanceID)
+    EJSetDumpDifficulty()
+    name, _, _, root = EJ_GetEncounterInfo(encID)
+    if root and root > 0 then return root, name, journalInstanceID end
+  end
+
+  -- Walk every raid/dungeon instance until this encounter appears.
+  if EJ_GetInstanceByIndex and EJ_GetEncounterInfoByIndex then
+    for isRaid = 1, 0, -1 do
+      local i = 1
+      while true do
+        local instanceID = EJ_GetInstanceByIndex(i, isRaid == 1)
+        if not instanceID then break end
+        pcall(EJ_SelectInstance, instanceID)
+        EJSetDumpDifficulty()
+        local j = 1
+        while true do
+          local eName, _, eID, eRoot = EJ_GetEncounterInfoByIndex(j)
+          if not eName then break end
+          if eID == encID then
+            return eRoot, eName, instanceID
+          end
+          j = j + 1
+          if j > 40 then break end
+        end
+        i = i + 1
+        if i > 200 then break end
+      end
+    end
+  end
+
+  -- Open Adventure Guide selection (if user has the boss page open).
+  if EncounterJournal and EncounterJournal.encounterID == encID then
+    name, _, _, root, _, journalInstanceID = EJ_GetEncounterInfo(encID)
+    if root and root > 0 then return root, name, journalInstanceID end
+  end
+
+  return nil, name, journalInstanceID
 end
 
 local function DumpSpellsForEncounter(encID, encName)
-  if EJ_SelectEncounter then pcall(EJ_SelectEncounter, encID) end
   local diff = EJSetDumpDifficulty()
-  local rootSectionID
-  if EJ_GetEncounterInfo then
-    local name, _, _, root = EJ_GetEncounterInfo(encID)
-    encName = encName or name
-    rootSectionID = root
-  end
+  if EJ_SelectEncounter then pcall(EJ_SelectEncounter, encID) end
+
+  local rootSectionID, resolvedName, journalInstanceID = ResolveEncounterRoot(encID)
+  encName = resolvedName or encName
+
   Print(("=== spells: %s (encounter %d, journal diff %s) ==="):format(
     encName or "?", encID, RAID_DIFF_LABELS[diff] or tostring(diff)))
-  if not rootSectionID then
-    Print("no root section — open Adventure Guide on this boss once, then retry.")
-    return
+
+  local spellMap = {}
+
+  if rootSectionID and rootSectionID > 0 then
+    WalkEJSections(rootSectionID, 0, {}, spellMap)
+  else
+    Print("root section missing — trying open Adventure Guide frames…")
   end
-  local n = WalkEJSections(rootSectionID, 0, {})
+
+  -- Always scrape the open EJ UI (overview bullets embed |Hspell:| links).
+  if EncounterJournal then
+    ScrapeSpellLinksFromFrame(EncounterJournal, spellMap, 0)
+  end
+
+  local n = PrintSpellMap(spellMap)
   if n == 0 then
-    Print("no spell IDs found (try /mhh ej diff heroic|mythic then retry).")
+    Print("no spell IDs found.")
+    Print("open Adventure Guide on the boss Abilities tab, hover a spell, then:")
+    Print("  /mhh ej mouse")
+    if journalInstanceID then
+      Print(("journal instanceID was %d — try /mhh ej %d first."):format(journalInstanceID, journalInstanceID))
+    end
   else
     Print(("paste %d line(s) into MHH_Raids.spellIds (or spellIdsByDiff[%d])."):format(n, diff))
+  end
+end
+
+-- Spell ID under the mouse (GameTooltip / EJ ability tooltip).
+local function DumpMouseSpell()
+  local spellID, name
+
+  local function fromTooltip(tip)
+    if not tip or not tip:IsShown() then return end
+    if tip.GetSpell then
+      local n, id = tip:GetSpell()
+      if id and id > 0 then return id, n end
+    end
+    if tip.GetTooltipData then
+      local data = tip:GetTooltipData()
+      if data and data.id and data.id > 0 then
+        local isSpell = true
+        if Enum and Enum.TooltipDataType and data.type then
+          isSpell = (data.type == Enum.TooltipDataType.Spell)
+        end
+        if isSpell then
+          return data.id, data.lines and data.lines[1] and data.lines[1].leftText
+        end
+      end
+    end
+    for i = 1, 40 do
+      local fs = _G[tip:GetName() and (tip:GetName() .. "TextLeft" .. i)]
+      local text = fs and fs:GetText()
+      if text then
+        local id, n = text:match("|Hspell:(%d+)|h%[(.-)%]|h")
+        if id then return tonumber(id), n end
+      end
+    end
+  end
+
+  spellID, name = fromTooltip(GameTooltip)
+  if not spellID then spellID, name = fromTooltip(ItemRefTooltip) end
+  if not spellID then spellID, name = fromTooltip(_G.EmbeddedItemTooltip) end
+
+  if spellID and spellID > 0 then
+    Print(("  [\"%s\"] = %d,"):format(name or ("spell:" .. spellID), spellID))
+  else
+    Print("no spell on tooltip — hover an ability in Adventure Guide, then /mhh ej mouse")
   end
 end
 
@@ -1872,9 +2026,15 @@ local function HandleEJCommand(rest)
     Print("  /mhh ej list all          — raids + dungeons")
     Print("  /mhh ej <name or id>      — boss encounter IDs")
     Print("  /mhh ej spells <boss|id>  — ability spell IDs")
+    Print("  /mhh ej mouse             — spell ID from hovered tooltip")
     Print("  /mhh ej diff lfr|n|h|m    — journal difficulty for dumps")
     Print("  /mhh ej                   — current instance (if inside one)")
     Print("  /mhh ej help              — this text")
+    return
+  end
+
+  if sub == "mouse" or sub == "tip" or sub == "tooltip" then
+    DumpMouseSpell()
     return
   end
 
