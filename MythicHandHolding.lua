@@ -1,6 +1,6 @@
 --=====================================================================
---  MythicHandHolding  v1.0.30
---  Midnight Season 1 dungeon callouts.
+--  MythicHandHolding  v1.1.0-alpha.1
+--  Midnight Season 1 M+ dungeons and raid callouts (raids alpha, issue #2).
 --  New in 1.0.6: chat hyperlinks for spells and bosses.
 --    * SPELL_IDS table: known spell name -> spell ID.
 --    * BOSS_IDS table:  known boss name  -> encounter ID.
@@ -10,7 +10,7 @@
 --      new IDs can be copy/pasted into BOSS_IDS.
 --=====================================================================
 
-local VERSION  = "1.0.36"
+local VERSION  = "1.1.0-alpha.1"
 
 MythicHandHoldingDB = MythicHandHoldingDB or {}
 
@@ -18,6 +18,10 @@ local function EnsureDB()
   MythicHandHoldingDB = MythicHandHoldingDB or {}
   if MythicHandHoldingDB.plainMode == nil then
     MythicHandHoldingDB.plainMode = true
+  end
+  if MythicHandHoldingDB.contentMode ~= "mplus"
+      and MythicHandHoldingDB.contentMode ~= "raid" then
+    MythicHandHoldingDB.contentMode = "mplus"
   end
   MythicHandHoldingDB.debug = MythicHandHoldingDB.debug or false
   if type(MythicHandHoldingDB.clickCounts) ~= "table" then
@@ -350,6 +354,23 @@ local BOSS_IDS = {
   -- Windrunner Spire:      Emberdawn, Derelict Duo, Commander Kroluk,
   --                        The Restless Heart
 }
+
+-- Raid journal difficulty per boss (dungeons default to 23 in MakeBossLink).
+local BOSS_JOURNAL_DIFF = {}
+
+-- Merge optional raid pack (MythicHandHolding_Raids.lua, alpha issue #2).
+local RAIDS = {}
+if MHH_Raids then
+  local rd = MHH_Raids.journalDiff or 14
+  for name, id in pairs(MHH_Raids.bossIds or {}) do
+    BOSS_IDS[name] = id
+    BOSS_JOURNAL_DIFF[name] = rd
+  end
+  for name, id in pairs(MHH_Raids.spellIds or {}) do
+    SPELL_IDS[name] = id
+  end
+  RAIDS = MHH_Raids.raids or {}
+end
 
 --=====================================================================
 --  DATA - 7 Midnight Season 1 dungeons.
@@ -744,7 +765,8 @@ local DUNGEONS = {
 --  STATE
 --=====================================================================
 local ui
-local pendingTab  = nil
+local pendingTab   = nil
+local pendingMode  = nil
 
 --=====================================================================
 --  HELPERS
@@ -754,8 +776,14 @@ local function Print(text)
 end
 
 -- Per-section broadcast click totals (persisted in SavedVariables).
-local function ClickCountKey(dIdx, sIdx)
-  return ("D%d_S%d"):format(dIdx, sIdx)
+local function ClickCountKey(mode, idx, sIdx)
+  local prefix = (mode == "raid") and "R" or "M"
+  return ("%s%d_S%d"):format(prefix, idx, sIdx)
+end
+
+local function ContentList(mode)
+  if mode == "raid" then return RAIDS end
+  return DUNGEONS
 end
 
 local function GetClickCount(key)
@@ -849,9 +877,10 @@ local function Linkify(text)
   for _, name in ipairs(_bossNamesByLen) do
     local id = BOSS_IDS[name]
     if id then
+      local diff = BOSS_JOURNAL_DIFF[name] or 23
       local pat = "%f[%w]" .. PatEsc(name) .. "%f[%W]"
       text = text:gsub(pat, function()
-        return stash(MakeBossLink(id, name))
+        return stash(MakeBossLink(id, name, diff))
       end)
     end
   end
@@ -1003,7 +1032,7 @@ local SECTION_W     = FRAME_W - FRAME_PAD * 2
 local DROPDOWN_W    = SECTION_W - 36   -- UIDropDownMenuTemplate arrow chrome
 local SECTION_H    = 22
 local SECTION_STEP = 24
-local HEADER_H     = 52   -- title + dropdown
+local HEADER_H     = 72   -- title + mode row + dropdown
 local FOOTER_H     = 46   -- checkboxes
 
 function UpdateLineBadge(b)
@@ -1090,25 +1119,48 @@ local function BuildUI()
   local close = CreateFrame("Button", nil, f, "UIPanelCloseButton")
   close:SetPoint("TOPRIGHT", -2, -2); close:SetSize(24, 24)
 
+  local currentMode = MythicHandHoldingDB.contentMode or "mplus"
   local currentTab = 1
-  local dungeonDropdown = CreateFrame("Frame", "MythicHandHoldingDungeonDropDown", f, "UIDropDownMenuTemplate")
-  dungeonDropdown:SetPoint("TOPLEFT", f, "TOPLEFT", FRAME_PAD, -24)
-  UIDropDownMenu_SetWidth(dungeonDropdown, DROPDOWN_W)
+  local contentDropdown = CreateFrame("Frame", "MythicHandHoldingContentDropDown", f, "UIDropDownMenuTemplate")
+  contentDropdown:SetPoint("TOPLEFT", f, "TOPLEFT", FRAME_PAD, -44)
+  UIDropDownMenu_SetWidth(contentDropdown, DROPDOWN_W)
 
-  local dungeonContainers = {}
+  local modeMplus = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
+  modeMplus:SetSize(48, 18)
+  modeMplus:SetPoint("TOPLEFT", f, "TOPLEFT", FRAME_PAD, -22)
+  modeMplus:SetText("M+")
+  local modeRaid = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
+  modeRaid:SetSize(48, 18)
+  modeRaid:SetPoint("LEFT", modeMplus, "RIGHT", 4, 0)
+  modeRaid:SetText("Raid")
+
+  local contentContainers = { mplus = {}, raid = {} }
   local sectionTopY = -(HEADER_H + 4)
   local ShowTab
+  local ShowMode
+
+  local function ActiveList()
+    return ContentList(currentMode)
+  end
 
   local function FrameHeightForTab(idx)
-    local n = #(DUNGEONS[idx] and DUNGEONS[idx].sections or {})
+    local list = ActiveList()
+    local n = #(list[idx] and list[idx].sections or {})
     return HEADER_H + 4 + n * SECTION_STEP + FOOTER_H + 4
   end
 
+  local function UpdateModeButtons()
+    local raidOn = (currentMode == "raid")
+    modeMplus:SetEnabled(raidOn)
+    modeRaid:SetEnabled(not raidOn)
+  end
+
   local function RefreshDropdown()
-    UIDropDownMenu_Initialize(dungeonDropdown, function()
-      for i, dungeon in ipairs(DUNGEONS) do
+    local list = ActiveList()
+    UIDropDownMenu_Initialize(contentDropdown, function()
+      for i, entry in ipairs(list) do
         local info = UIDropDownMenu_CreateInfo()
-        info.text = dungeon.name
+        info.text = entry.name
         info.arg1 = i
         info.func = function(_, arg1)
           if ShowTab then ShowTab(arg1) end
@@ -1117,9 +1169,9 @@ local function BuildUI()
         UIDropDownMenu_AddButton(info)
       end
     end)
-    if DUNGEONS[currentTab] then
-      UIDropDownMenu_SetSelectedValue(dungeonDropdown, currentTab)
-      UIDropDownMenu_SetText(dungeonDropdown, DUNGEONS[currentTab].name)
+    if list[currentTab] then
+      UIDropDownMenu_SetSelectedValue(contentDropdown, currentTab)
+      UIDropDownMenu_SetText(contentDropdown, list[currentTab].name)
     end
   end
 
@@ -1194,15 +1246,15 @@ local function BuildUI()
     b:SetScript("OnLeave", function() GameTooltip:Hide() end)
   end
 
-  local function PreBuildDungeon(dIdx, dungeon, topY)
-    local c = CreateFrame("Frame", "MHHDungeon" .. dIdx, f)
+  local function PreBuildContent(mode, idx, entry, topY)
+    local c = CreateFrame("Frame", ("MHHContent_%s_%d"):format(mode, idx), f)
     c:Hide()
     c:SetPoint("TOPLEFT", f, "TOPLEFT", FRAME_PAD, topY)
-    c:SetSize(SECTION_W, #dungeon.sections * SECTION_STEP)
+    c:SetSize(SECTION_W, #entry.sections * SECTION_STEP)
     local y = 0
-    for sIdx, section in ipairs(dungeon.sections) do
-      local btnName = "MHHSection_D" .. dIdx .. "_S" .. sIdx
-      local clickKey = ClickCountKey(dIdx, sIdx)
+    for sIdx, section in ipairs(entry.sections) do
+      local btnName = ("MHHSection_%s_%d_S%d"):format(mode, idx, sIdx)
+      local clickKey = ClickCountKey(mode, idx, sIdx)
       local b = MakeSectionButton(c, section, SECTION_W, btnName, clickKey)
       b:SetPoint("TOPLEFT", c, "TOPLEFT", 0, y)
       AttachSectionHooks(b, section)
@@ -1213,18 +1265,37 @@ local function BuildUI()
   end
 
   ShowTab = function(idx)
-    if idx < 1 or idx > #DUNGEONS then return end
+    local list = ActiveList()
+    if idx < 1 or idx > #list then return end
     currentTab = idx
-    for i, c in ipairs(dungeonContainers) do
-      if i == idx then c:Show() else c:Hide() end
+    for mode, containers in pairs(contentContainers) do
+      for i, c in ipairs(containers) do
+        if mode == currentMode and i == idx then c:Show() else c:Hide() end
+      end
     end
     f:SetHeight(FrameHeightForTab(idx))
     RefreshDropdown()
   end
 
+  ShowMode = function(mode, idx)
+    if mode ~= "mplus" and mode ~= "raid" then return end
+    if #ContentList(mode) == 0 then return end
+    currentMode = mode
+    MythicHandHoldingDB.contentMode = mode
+    UpdateModeButtons()
+    ShowTab(idx or 1)
+  end
+
+  modeMplus:SetScript("OnClick", function() ShowMode("mplus", 1) end)
+  modeRaid:SetScript("OnClick", function() ShowMode("raid", 1) end)
+  UpdateModeButtons()
+
   wipe(_liveSectionButtons)
   for i, dungeon in ipairs(DUNGEONS) do
-    dungeonContainers[i] = PreBuildDungeon(i, dungeon, sectionTopY)
+    contentContainers.mplus[i] = PreBuildContent("mplus", i, dungeon, sectionTopY)
+  end
+  for i, raid in ipairs(RAIDS) do
+    contentContainers.raid[i] = PreBuildContent("raid", i, raid, sectionTopY)
   end
 
   local testCheck = CreateFrame("CheckButton", "MythicHandHoldingTestCheck",
@@ -1273,10 +1344,16 @@ local function BuildUI()
   end)
   plainCheck:SetScript("OnLeave", function() GameTooltip:Hide() end)
 
-  if #DUNGEONS > 0 then ShowTab(pendingTab or 1) end
+  if #DUNGEONS > 0 or #RAIDS > 0 then
+    local startMode = pendingMode or MythicHandHoldingDB.contentMode or "mplus"
+    if #ContentList(startMode) == 0 then
+      startMode = (#DUNGEONS > 0) and "mplus" or "raid"
+    end
+    ShowMode(startMode, pendingTab or 1)
+  end
   -- Default-hidden: open via minimap, /mhh, or instance auto-open.
   f:Hide()
-  return { frame = f, ShowTab = ShowTab }
+  return { frame = f, ShowTab = ShowTab, ShowMode = ShowMode }
 end
 
 local function EnsureUI()
@@ -1388,30 +1465,33 @@ end
 --=====================================================================
 --  AUTO-TAB ON ZONE-IN
 --=====================================================================
-local function FindDungeonForCurrentInstance()
+local function FindContentForCurrentInstance()
   if not IsInInstance() then return nil end
-  local name = GetInstanceInfo()
+  local name, instType = GetInstanceInfo()
   if not name or name == "" then return nil end
   local n = Norm(name)
-  for i, d in ipairs(DUNGEONS) do
-    local dn = Norm(d.name)
+  local mode = (instType == "raid") and "raid" or "mplus"
+  local list = ContentList(mode)
+  for i, entry in ipairs(list) do
+    local dn = Norm(entry.name)
     if n == dn or n:find(dn, 1, true) or dn:find(n, 1, true) then
-      return i, d
+      return mode, i, entry
     end
   end
   return nil
 end
 
 local function MaybeAutoSwitchTab()
-  local idx, dungeon = FindDungeonForCurrentInstance()
+  local mode, idx, entry = FindContentForCurrentInstance()
   if not idx then return end
+  pendingMode = mode
   pendingTab = idx
-  if ui and ui.ShowTab then
-    ui.ShowTab(idx)
+  if ui and ui.ShowMode then
+    ui.ShowMode(mode, idx)
     C_Timer.After(0, function()
       if ui and ui.frame then ui.frame:Show() end
     end)
-    Print("auto-switched to " .. dungeon.name .. " (window opened)")
+    Print("auto-switched to " .. entry.name .. " (" .. mode .. ", window opened)")
   end
 end
 
@@ -1521,6 +1601,12 @@ SlashCmdList["MYTHICHANDHOLDING"] = function(arg)
       _G["MythicHandHoldingPlainCheck"]:SetChecked(MythicHandHoldingDB.plainMode)
     end
     Print("Plain Text " .. (MythicHandHoldingDB.plainMode and "ON" or "OFF"))
+  elseif arg == "modemplus" or arg == "mplus" then
+    if ui and ui.ShowMode then ui.ShowMode("mplus", 1) end
+    Print("content mode: Mythic+ dungeons")
+  elseif arg == "moderaid" or arg == "raid" then
+    if ui and ui.ShowMode then ui.ShowMode("raid", 1) end
+    Print("content mode: raids")
   elseif arg == "" then
     ToggleWindow()
   else
