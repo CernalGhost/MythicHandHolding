@@ -1668,11 +1668,15 @@ local function DumpEncountersForInstance(ejInstID, instName)
   end
 end
 
+local function CompactKey(s)
+  return Norm(s):gsub("%s+", "")
+end
+
 local function FindEJInstance(query)
   query = Norm(query)
+  local qCompact = CompactKey(query)
   if query:match("^%d+$") then
     local id = tonumber(query)
-    -- Resolve name by scanning raid + dungeon lists.
     for isRaid = 1, 0, -1 do
       local i = 1
       while true do
@@ -1685,16 +1689,53 @@ local function FindEJInstance(query)
     end
     return id, ("instance %d"):format(id)
   end
-  local bestID, bestName
+
+  -- Prefer pinned IDs from the raid pack (aliases like "queldanas").
+  if MHH_Raids and MHH_Raids.instanceIds then
+    for name, id in pairs(MHH_Raids.instanceIds) do
+      local n = Norm(name)
+      local nc = CompactKey(name)
+      if n == query or nc == qCompact
+          or nc:find(qCompact, 1, true) or qCompact:find(nc, 1, true) then
+        return id, name
+      end
+    end
+  end
+  -- Common shortcuts.
+  local aliases = {
+    queldanas = "March on Quel'Danas",
+    quel = "March on Quel'Danas",
+    mqd = "March on Quel'Danas",
+    voidspire = "The Voidspire",
+    dreamrift = "The Dreamrift",
+    sporefall = "Sporefall",
+    worldbosses = "Midnight",
+    wb = "Midnight",
+  }
+  if aliases[qCompact] and MHH_Raids and MHH_Raids.instanceIds then
+    local name = aliases[qCompact]
+    local id = MHH_Raids.instanceIds[name]
+    if id then return id, name end
+  end
+
+  local bestID, bestName, bestScore = nil, nil, 0
   for isRaid = 1, 0, -1 do
     local i = 1
     while true do
       local instanceID, name = EJ_GetInstanceByIndex(i, isRaid == 1)
       if not instanceID then break end
       local n = Norm(name)
-      if n == query then return instanceID, name end
-      if not bestID and (n:find(query, 1, true) or query:find(n, 1, true)) then
-        bestID, bestName = instanceID, name
+      local nc = CompactKey(name)
+      local score = 0
+      if n == query or nc == qCompact then
+        return instanceID, name
+      end
+      -- "queldanas" matches "march on quel danas" via compact substring.
+      if #qCompact >= 4 and nc:find(qCompact, 1, true) then score = score + 3 end
+      if #nc >= 4 and qCompact:find(nc, 1, true) then score = score + 2 end
+      if n:find(query, 1, true) or query:find(n, 1, true) then score = score + 1 end
+      if score > bestScore then
+        bestScore, bestID, bestName = score, instanceID, name
       end
       i = i + 1
       if i > 200 then break end

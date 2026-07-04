@@ -16,24 +16,41 @@
 MHH_Raids = {
   journalDiff = 14,  -- default Normal raid journal links (dungeons use 23)
 
-  -- Encounter IDs — placeholders until /mhh ej confirms; wrong IDs = plain text.
+  -- Encounter IDs from Adventure Guide (/mhh ej) — 2026-07-03.
+  -- EJ instance IDs: Voidspire 1307, Dreamrift 1314, Quel'Danas 1308,
+  -- Sporefall 1305, Midnight world bosses 1312.
   bossIds = {
-    ["Imperator Averzian"]       = 3120,
-    ["Vorasius"]                  = 3121,
-    ["Fallen-King Salhadaar"]     = 3122,
-    ["Vaelgor & Ezzorak"]        = 3123,
-    ["Vaelgor"]                   = 3123,
-    ["Ezzorak"]                   = 3123,
-    ["Lightblinded Vanguard"]    = 3124,
-    ["Crown of the Cosmos"]      = 3125,
-    ["Alleria Windrunner"]       = 3125,
-    ["Chimaerus"]                 = 3126,
-    ["Chimaerus, the Undreamt God"] = 3126,
-    ["Belo'ren, Child of Al'ar"]  = 3127,
-    ["Belo'ren"]                  = 3127,
-    ["Midnight Falls"]            = 3128,
-    ["L'ura"]                     = 3128,
-    ["Rotmire"]                   = 3129,
+    ["Imperator Averzian"]            = 2733,
+    ["Vorasius"]                       = 2734,
+    ["Fallen-King Salhadaar"]          = 2736,
+    ["Vaelgor & Ezzorak"]             = 2735,
+    ["Vaelgor"]                        = 2735,
+    ["Ezzorak"]                        = 2735,
+    ["Lightblinded Vanguard"]         = 2737,
+    ["Crown of the Cosmos"]           = 2738,
+    ["Alleria Windrunner"]            = 2738,
+    ["Chimaerus the Undreamt God"]    = 2795,
+    ["Chimaerus, the Undreamt God"]   = 2795,
+    ["Chimaerus"]                      = 2795,
+    ["Belo'ren, Child of Al'ar"]       = 2739,
+    ["Belo'ren"]                       = 2739,
+    ["Midnight Falls"]                 = 2740,
+    ["L'ura"]                          = 2740,
+    ["Rotmire"]                        = 2711,
+    -- Outdoor world bosses (EJ "Midnight" instance 1312)
+    ["Lu'ashal"]                       = 2827,
+    ["Thorm'belan"]                    = 2829,
+    ["Predaxas"]                       = 2828,
+    ["Cragpine"]                       = 2782,
+  },
+
+  -- Optional: pin EJ instance IDs for /mhh ej name matching.
+  instanceIds = {
+    ["The Voidspire"]         = 1307,
+    ["The Dreamrift"]         = 1314,
+    ["March on Quel'Danas"]   = 1308,
+    ["Sporefall"]             = 1305,
+    ["Midnight"]              = 1312,  -- world bosses
   },
 
   -- Base spell IDs (all difficulties). Prefer /mhh ej spells <boss>.
@@ -136,7 +153,7 @@ MHH_Raids = {
       tier = "Midnight S1",
       sections = {
         { label = "Chimaerus",
-          boss  = "Chimaerus, the Undreamt God",
+          boss  = "Chimaerus the Undreamt God",
           title = "=== CHIMAERUS ===",
           lines = {
             "Alndust Upheaval soak grants Alnsight — only way to see/damage Rift Manifestations",
@@ -242,6 +259,51 @@ MHH_Raids = {
           lines = {
             "Single-boss raid (patch 12.0.7) — Sporefused gear, no tier tokens",
             "Plan healer CDs on each Fungal Bloom; one Bursting Shroom is survivable, two+ usually wipe",
+          } },
+      },
+    },
+
+    ------------------------------------------------------------------
+    -- Outdoor world bosses (EJ lists these under "Midnight")
+    ------------------------------------------------------------------
+    {
+      name = "World Bosses",
+      tab  = "WB",
+      tier = "Midnight S1 outdoor",
+      sections = {
+        { label = "Lu'ashal",
+          boss  = "Lu'ashal",
+          title = "=== LU'ASHAL ===",
+          lines = {
+            "Eversong Woods weekly world boss — Champion-track loot",
+            "Stack for raid CDs; treat as a short outdoor burn",
+          } },
+        { label = "Cragpine",
+          boss  = "Cragpine",
+          title = "=== CRAGPINE ===",
+          lines = {
+            "Weekly world boss (Zul'Aman / Eversong area) — Champion-track loot",
+            "Watch ground effects; burn and loot, one kill per week per character",
+          } },
+        { label = "Thorm'belan",
+          boss  = "Thorm'belan",
+          title = "=== THORM'BELAN ===",
+          lines = {
+            "Harandar weekly world boss — Champion-track loot",
+            "Lightbloom-afflicted beast; stack defensives on big hits",
+          } },
+        { label = "Predaxas",
+          boss  = "Predaxas",
+          title = "=== PREDAXAS ===",
+          lines = {
+            "Voidstorm weekly world boss — Champion-track loot",
+            "Void-themed outdoor burn; one active world boss per week",
+          } },
+        { label = "Tips",
+          title = "=== WORLD BOSS TIPS ===",
+          lines = {
+            "Only one Midnight world boss is up each week (skull WQ on map)",
+            "EJ lists them under instance \"Midnight\" (id 1312) — not a raid lockout",
           } },
       },
     },

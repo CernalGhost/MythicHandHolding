@@ -2,7 +2,10 @@
 
 ## 1.1.0-alpha.2 (issue #2 — raids alpha)
 
+- **Verified encounter IDs** from Adventure Guide (Voidspire, Dreamrift, Quel'Danas, Sporefall, world bosses).
 - **Sporefall** (patch 12.0.7): Rotmire single-boss raid with Normal/Heroic/Mythic tip variants.
+- **World Bosses** entry (Lu'ashal, Cragpine, Thorm'belan, Predaxas) from EJ "Midnight".
+- `/mhh ej queldanas` (and similar shortcuts) resolve March on Quel'Danas.
 - **Raid difficulty UI:** LFR / N / H / M buttons; auto-detects when you zone into a raid.
 - **Difficulty-specific tips:** `extraByDiff` lines append for the active difficulty; journal links use it too.
 - **Adventure Guide dumps (no need to be inside the raid):**
