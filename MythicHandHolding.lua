@@ -1,6 +1,6 @@
 --=====================================================================
---  MythicHandHolding  v1.0.30
---  Midnight Season 1 dungeon callouts.
+--  MythicHandHolding  v1.1.0-alpha.5
+--  Midnight Season 1 M+ dungeons and raid callouts (raids alpha, issue #2).
 --  New in 1.0.6: chat hyperlinks for spells and bosses.
 --    * SPELL_IDS table: known spell name -> spell ID.
 --    * BOSS_IDS table:  known boss name  -> encounter ID.
@@ -10,7 +10,7 @@
 --      new IDs can be copy/pasted into BOSS_IDS.
 --=====================================================================
 
-local VERSION  = "1.0.36"
+local VERSION  = "1.1.0-alpha.5"
 
 MythicHandHoldingDB = MythicHandHoldingDB or {}
 
@@ -19,7 +19,19 @@ local function EnsureDB()
   if MythicHandHoldingDB.plainMode == nil then
     MythicHandHoldingDB.plainMode = true
   end
+  if MythicHandHoldingDB.contentMode ~= "mplus"
+      and MythicHandHoldingDB.contentMode ~= "raid" then
+    MythicHandHoldingDB.contentMode = "mplus"
+  end
+  -- Raid journal difficulty: 17=LFR, 14=Normal, 15=Heroic, 16=Mythic.
+  local rd = MythicHandHoldingDB.raidDifficulty
+  if rd ~= 14 and rd ~= 15 and rd ~= 16 and rd ~= 17 then
+    MythicHandHoldingDB.raidDifficulty = 14
+  end
   MythicHandHoldingDB.debug = MythicHandHoldingDB.debug or false
+  if MythicHandHoldingDB.sayMode == nil then
+    MythicHandHoldingDB.sayMode = false
+  end
   if type(MythicHandHoldingDB.clickCounts) ~= "table" then
     MythicHandHoldingDB.clickCounts = {}
   end
@@ -350,6 +362,83 @@ local BOSS_IDS = {
   -- Windrunner Spire:      Emberdawn, Derelict Duo, Commander Kroluk,
   --                        The Restless Heart
 }
+
+-- Raid boss names use active raid difficulty for journal links (not 23).
+local RAID_BOSS_NAMES = {}
+local RAID_SPELL_IDS = {}       -- full Adventure Guide dump (reference)
+local RAID_SPELL_LINKABLE = {}  -- only names that appear in tip text
+local RAID_SPELL_BY_DIFF = {}
+
+-- Merge optional raid pack (MythicHandHolding_Raids.lua, alpha issue #2).
+-- Raid spells stay separate so M+ IDs (e.g. Blinding Light) are not overwritten.
+local RAIDS = {}
+if MHH_Raids then
+  for name, id in pairs(MHH_Raids.bossIds or {}) do
+    BOSS_IDS[name] = id
+    RAID_BOSS_NAMES[name] = true
+  end
+  RAID_SPELL_IDS = MHH_Raids.spellIds or {}
+  RAID_SPELL_BY_DIFF = MHH_Raids.spellIdsByDiff or {}
+  RAIDS = MHH_Raids.raids or {}
+end
+
+local RAID_DIFF_LABELS = {
+  [17] = "LFR",
+  [14] = "Normal",
+  [15] = "Heroic",
+  [16] = "Mythic",
+}
+
+local function IsRaidDifficulty(id)
+  return id == 14 or id == 15 or id == 16 or id == 17
+end
+
+-- Active raid difficulty for journal links + extraByDiff tips.
+-- Prefers live instance difficulty when inside a raid.
+local function GetActiveRaidDifficulty()
+  EnsureDB()
+  if IsInInstance() then
+    local _, instType, difficultyID = GetInstanceInfo()
+    if instType == "raid" and IsRaidDifficulty(difficultyID) then
+      return difficultyID
+    end
+  end
+  return MythicHandHoldingDB.raidDifficulty or 14
+end
+
+local RefreshAllMacros  -- forward decl (SetRaidDifficulty is defined above its body)
+
+local function ActiveSpellId(name)
+  local byDiff = RAID_SPELL_BY_DIFF[GetActiveRaidDifficulty()]
+  if byDiff and byDiff[name] then return byDiff[name] end
+  -- Raid tips: only hyperlink spells that appear in callout text.
+  if (MythicHandHoldingDB.contentMode or "mplus") == "raid" then
+    if RAID_SPELL_LINKABLE[name] then return RAID_SPELL_LINKABLE[name] end
+    return SPELL_IDS[name]
+  end
+  return SPELL_IDS[name]
+end
+
+-- Set preferred raid difficulty (overridden by live instance while inside a raid).
+local function SetRaidDifficulty(diffId, silent)
+  if not IsRaidDifficulty(diffId) then return false end
+  EnsureDB()
+  MythicHandHoldingDB.raidDifficulty = diffId
+  if not InCombatLockdown() then
+    RefreshAllMacros()
+  end
+  if ui and ui.SyncRaidDiff then ui.SyncRaidDiff() end
+  if not silent then
+    local active = GetActiveRaidDifficulty()
+    local live = ""
+    if IsInInstance() then
+      local _, instType = GetInstanceInfo()
+      if instType == "raid" then live = " (live instance)" end
+    end
+    Print("raid difficulty: " .. (RAID_DIFF_LABELS[active] or active) .. live)
+  end
+  return true
+end
 
 --=====================================================================
 --  DATA - 7 Midnight Season 1 dungeons.
@@ -744,7 +833,8 @@ local DUNGEONS = {
 --  STATE
 --=====================================================================
 local ui
-local pendingTab  = nil
+local pendingTab   = nil
+local pendingMode  = nil
 
 --=====================================================================
 --  HELPERS
@@ -754,8 +844,14 @@ local function Print(text)
 end
 
 -- Per-section broadcast click totals (persisted in SavedVariables).
-local function ClickCountKey(dIdx, sIdx)
-  return ("D%d_S%d"):format(dIdx, sIdx)
+local function ClickCountKey(mode, idx, sIdx)
+  local prefix = (mode == "raid") and "R" or "M"
+  return ("%s%d_S%d"):format(prefix, idx, sIdx)
+end
+
+local function ContentList(mode)
+  if mode == "raid" then return RAIDS end
+  return DUNGEONS
 end
 
 local function GetClickCount(key)
@@ -813,16 +909,78 @@ local function MakeBossLink(encounterID, displayName, difficulty)
 end
 
 -- Pre-sort lookup keys longest-first so "Frost Nova" matches before "Frost".
-local _spellNamesByLen, _bossNamesByLen
+local _spellNamesByLen, _mplusSpellNamesByLen, _raidSpellNamesByLen, _bossNamesByLen
+local function RebuildRaidSpellLinkable()
+  wipe(RAID_SPELL_LINKABLE)
+  local names = {}
+  for n in pairs(RAID_SPELL_IDS) do names[#names + 1] = n end
+  table.sort(names, function(a, b) return #a > #b end)
+  local function consider(line)
+    if not line or line == "" then return end
+    for _, name in ipairs(names) do
+      if line:find(name, 1, true) then
+        local pat = "%f[%w]" .. PatEsc(name) .. "%f[%W]"
+        if line:find(pat) then
+          RAID_SPELL_LINKABLE[name] = RAID_SPELL_IDS[name]
+        end
+      end
+    end
+  end
+  for _, raid in ipairs(RAIDS) do
+    for _, sec in ipairs(raid.sections or {}) do
+      for _, line in ipairs(sec.lines or {}) do consider(line) end
+      if sec.extraByDiff then
+        for _, lines in pairs(sec.extraByDiff) do
+          for _, line in ipairs(lines) do consider(line) end
+        end
+      end
+    end
+  end
+end
+
 local function RebuildLookupOrder()
+  RebuildRaidSpellLinkable()
+  local function sortByLen(list)
+    table.sort(list, function(a, b) return #a > #b end)
+  end
+  local function fillList(from, out, seen)
+    for n in pairs(from) do
+      if n and not seen[n] then
+        seen[n] = true
+        out[#out + 1] = n
+      end
+    end
+  end
+
+  local seen = {}
+  _mplusSpellNamesByLen = {}
+  fillList(SPELL_IDS, _mplusSpellNamesByLen, seen)
+  sortByLen(_mplusSpellNamesByLen)
+
+  seen = {}
+  _raidSpellNamesByLen = {}
+  fillList(RAID_SPELL_LINKABLE, _raidSpellNamesByLen, seen)
+  sortByLen(_raidSpellNamesByLen)
+
+  seen = {}
   _spellNamesByLen = {}
-  for n in pairs(SPELL_IDS) do _spellNamesByLen[#_spellNamesByLen+1] = n end
-  table.sort(_spellNamesByLen, function(a,b) return #a > #b end)
+  for _, n in ipairs(_mplusSpellNamesByLen) do fillList({ [n] = true }, _spellNamesByLen, seen) end
+  for _, n in ipairs(_raidSpellNamesByLen) do fillList({ [n] = true }, _spellNamesByLen, seen) end
+  sortByLen(_spellNamesByLen)
+
   _bossNamesByLen = {}
-  for n in pairs(BOSS_IDS) do _bossNamesByLen[#_bossNamesByLen+1] = n end
-  table.sort(_bossNamesByLen, function(a,b) return #a > #b end)
+  for n in pairs(BOSS_IDS) do _bossNamesByLen[#_bossNamesByLen + 1] = n end
+  sortByLen(_bossNamesByLen)
 end
 RebuildLookupOrder()
+
+local function SpellNamesForLinkify()
+  EnsureDB()
+  if (MythicHandHoldingDB.contentMode or "mplus") == "raid" then
+    return _raidSpellNamesByLen or _spellNamesByLen
+  end
+  return _mplusSpellNamesByLen or _spellNamesByLen
+end
 
 -- Replace known spell/boss names with their chat hyperlinks.  Uses
 -- word-boundary anchors so "Frost" doesn't eat the start of "Frost Nova".
@@ -837,22 +995,27 @@ local function Linkify(text)
     return ("\1MHH" .. #replacements .. "\1")
   end
 
-  for _, name in ipairs(_spellNamesByLen) do
-    local id = SPELL_IDS[name]
-    if id then
-      local pat = "%f[%w]" .. PatEsc(name) .. "%f[%W]"
-      text = text:gsub(pat, function()
-        return stash(MakeSpellLink(id, name))
-      end)
+  for _, name in ipairs(SpellNamesForLinkify()) do
+    if text:find(name, 1, true) then
+      local id = ActiveSpellId(name)
+      if id then
+        local pat = "%f[%w]" .. PatEsc(name) .. "%f[%W]"
+        text = text:gsub(pat, function()
+          return stash(MakeSpellLink(id, name))
+        end)
+      end
     end
   end
   for _, name in ipairs(_bossNamesByLen) do
-    local id = BOSS_IDS[name]
-    if id then
-      local pat = "%f[%w]" .. PatEsc(name) .. "%f[%W]"
-      text = text:gsub(pat, function()
-        return stash(MakeBossLink(id, name))
-      end)
+    if text:find(name, 1, true) then
+      local id = BOSS_IDS[name]
+      if id then
+        local diff = RAID_BOSS_NAMES[name] and GetActiveRaidDifficulty() or 23
+        local pat = "%f[%w]" .. PatEsc(name) .. "%f[%W]"
+        text = text:gsub(pat, function()
+          return stash(MakeBossLink(id, name, diff))
+        end)
+      end
     end
   end
   -- Restore placeholders.
@@ -896,6 +1059,7 @@ end
 -- you don't have a home party.
 local function CurrentChatSlash()
   if MythicHandHoldingDB.testMode then return nil end
+  if MythicHandHoldingDB.sayMode then return "/s" end
   local inInst, instType = IsInInstance()
   if inInst and (instType == "party" or instType == "raid") then
     if IsInGroup(2) and not IsInGroup(1) then return "/i" end
@@ -927,17 +1091,30 @@ local function CompactCalloutLine(line)
   return compact
 end
 
-local function GetBroadcastLines(section)
-  -- Broadcast tips/callouts only.  The button label + tooltip title give
-  -- context; skipping === headers saves a click per section under 11.0 rules.
-  local plain = MythicHandHoldingDB.plainMode and true or false
+local function SectionLinesForDifficulty(section)
   local out = {}
   if section.lines then
     for _, line in ipairs(section.lines) do
-      if line and line ~= "" then
-        out[#out + 1] = LinkifySafe(CompactCalloutLine(line), plain)
-      end
+      if line and line ~= "" then out[#out + 1] = line end
     end
+  end
+  local extra = section.extraByDiff and section.extraByDiff[GetActiveRaidDifficulty()]
+  if extra then
+    for _, line in ipairs(extra) do
+      if line and line ~= "" then out[#out + 1] = line end
+    end
+  end
+  return out
+end
+
+local function GetBroadcastLines(section)
+  -- Broadcast tips/callouts only.  The button label + tooltip title give
+  -- context; skipping === headers saves a click per section under 11.0 rules.
+  -- Raid sections may append extraByDiff[difficulty] lines.
+  local plain = MythicHandHoldingDB.plainMode and true or false
+  local out = {}
+  for _, line in ipairs(SectionLinesForDifficulty(section)) do
+    out[#out + 1] = LinkifySafe(CompactCalloutLine(line), plain)
   end
   return out
 end
@@ -984,17 +1161,34 @@ local function AdvanceSectionMacro(visibleButton)
 end
 
 local UpdateLineBadge
+local refreshMacroGen = 0
 
-local function RefreshAllMacros()
+RefreshAllMacros = function()
   if InCombatLockdown() then return end
-  for _, b in ipairs(_liveSectionButtons) do
-    if b._section then
-      b._lineIdx = 1
-      b._cycleSent = 0
-      BuildSectionMacro(b, b._section, 1)
-      UpdateLineBadge(b)
+  refreshMacroGen = refreshMacroGen + 1
+  local gen = refreshMacroGen
+  local idx = 1
+  local total = #_liveSectionButtons
+
+  local function step()
+    if gen ~= refreshMacroGen or InCombatLockdown() then return end
+    while idx <= total do
+      local b = _liveSectionButtons[idx]
+      idx = idx + 1
+      if b._section then
+        b._lineIdx = 1
+        b._cycleSent = 0
+        BuildSectionMacro(b, b._section, 1)
+        UpdateLineBadge(b)
+        break
+      end
+    end
+    if idx <= total then
+      C_Timer.After(0, step)
     end
   end
+
+  step()
 end
 
 local FRAME_W       = 224
@@ -1003,8 +1197,8 @@ local SECTION_W     = FRAME_W - FRAME_PAD * 2
 local DROPDOWN_W    = SECTION_W - 36   -- UIDropDownMenuTemplate arrow chrome
 local SECTION_H    = 22
 local SECTION_STEP = 24
-local HEADER_H     = 52   -- title + dropdown
-local FOOTER_H     = 46   -- checkboxes
+local HEADER_H     = 72   -- title + mode row + dropdown
+local FOOTER_H     = 62   -- checkboxes
 
 function UpdateLineBadge(b)
   if not b or not b.lineBadge then return end
@@ -1090,25 +1284,92 @@ local function BuildUI()
   local close = CreateFrame("Button", nil, f, "UIPanelCloseButton")
   close:SetPoint("TOPRIGHT", -2, -2); close:SetSize(24, 24)
 
+  local currentMode = MythicHandHoldingDB.contentMode or "mplus"
   local currentTab = 1
-  local dungeonDropdown = CreateFrame("Frame", "MythicHandHoldingDungeonDropDown", f, "UIDropDownMenuTemplate")
-  dungeonDropdown:SetPoint("TOPLEFT", f, "TOPLEFT", FRAME_PAD, -24)
-  UIDropDownMenu_SetWidth(dungeonDropdown, DROPDOWN_W)
+  local contentDropdown = CreateFrame("Frame", "MythicHandHoldingContentDropDown", f, "UIDropDownMenuTemplate")
+  contentDropdown:SetPoint("TOPLEFT", f, "TOPLEFT", FRAME_PAD, -44)
+  UIDropDownMenu_SetWidth(contentDropdown, DROPDOWN_W)
 
-  local dungeonContainers = {}
+  local modeMplus = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
+  modeMplus:SetSize(40, 18)
+  modeMplus:SetPoint("TOPLEFT", f, "TOPLEFT", FRAME_PAD, -22)
+  modeMplus:SetText("M+")
+  local modeRaid = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
+  modeRaid:SetSize(40, 18)
+  modeRaid:SetPoint("LEFT", modeMplus, "RIGHT", 2, 0)
+  modeRaid:SetText("Raid")
+
+  -- Raid difficulty: LFR / N / H / M (journal IDs 17/14/15/16).
+  local DIFF_ORDER = { 17, 14, 15, 16 }
+  local DIFF_SHORT = { [17] = "LFR", [14] = "N", [15] = "H", [16] = "M" }
+  local diffButtons = {}
+  local prevDiffBtn = modeRaid
+  for _, diffId in ipairs(DIFF_ORDER) do
+    local b = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
+    b:SetSize(diffId == 17 and 32 or 24, 18)
+    b:SetPoint("LEFT", prevDiffBtn, "RIGHT", 2, 0)
+    b:SetText(DIFF_SHORT[diffId])
+    b._raidDiff = diffId
+    b:Hide()
+    diffButtons[#diffButtons + 1] = b
+    prevDiffBtn = b
+  end
+
+  local contentContainers = { mplus = {}, raid = {} }
   local sectionTopY = -(HEADER_H + 4)
   local ShowTab
+  local ShowMode
+
+  local function ActiveList()
+    return ContentList(currentMode)
+  end
 
   local function FrameHeightForTab(idx)
-    local n = #(DUNGEONS[idx] and DUNGEONS[idx].sections or {})
+    local list = ActiveList()
+    local n = #(list[idx] and list[idx].sections or {})
     return HEADER_H + 4 + n * SECTION_STEP + FOOTER_H + 4
   end
 
+  local function SyncRaidDiff()
+    local active = GetActiveRaidDifficulty()
+    for _, b in ipairs(diffButtons) do
+      b:SetEnabled(b._raidDiff ~= active)
+    end
+  end
+
+  local function UpdateModeButtons()
+    local raidOn = (currentMode == "raid")
+    modeMplus:SetEnabled(raidOn)
+    modeRaid:SetEnabled(not raidOn)
+    for _, b in ipairs(diffButtons) do
+      if raidOn then b:Show() else b:Hide() end
+    end
+    if raidOn then SyncRaidDiff() end
+  end
+
+  for _, b in ipairs(diffButtons) do
+    b:SetScript("OnClick", function(self)
+      SetRaidDifficulty(self._raidDiff)
+    end)
+    b:SetScript("OnEnter", function(self)
+      GameTooltip:SetOwner(self, "ANCHOR_TOP")
+      GameTooltip:SetText("Raid difficulty", 1, 1, 1)
+      GameTooltip:AddLine(
+        (RAID_DIFF_LABELS[self._raidDiff] or "?")
+          .. " — journal links + difficulty-only tips.",
+        0.8, 0.8, 0.8, true)
+      GameTooltip:AddLine("Auto-switches when you zone into a raid.", 0.6, 0.6, 0.6, true)
+      GameTooltip:Show()
+    end)
+    b:SetScript("OnLeave", function() GameTooltip:Hide() end)
+  end
+
   local function RefreshDropdown()
-    UIDropDownMenu_Initialize(dungeonDropdown, function()
-      for i, dungeon in ipairs(DUNGEONS) do
+    local list = ActiveList()
+    UIDropDownMenu_Initialize(contentDropdown, function()
+      for i, entry in ipairs(list) do
         local info = UIDropDownMenu_CreateInfo()
-        info.text = dungeon.name
+        info.text = entry.name
         info.arg1 = i
         info.func = function(_, arg1)
           if ShowTab then ShowTab(arg1) end
@@ -1117,9 +1378,9 @@ local function BuildUI()
         UIDropDownMenu_AddButton(info)
       end
     end)
-    if DUNGEONS[currentTab] then
-      UIDropDownMenu_SetSelectedValue(dungeonDropdown, currentTab)
-      UIDropDownMenu_SetText(dungeonDropdown, DUNGEONS[currentTab].name)
+    if list[currentTab] then
+      UIDropDownMenu_SetSelectedValue(contentDropdown, currentTab)
+      UIDropDownMenu_SetText(contentDropdown, list[currentTab].name)
     end
   end
 
@@ -1163,7 +1424,7 @@ local function BuildUI()
         GameTooltip:AddLine(section.title, 0.85, 0.85, 0.85, true)
       end
       GameTooltip:AddLine(" ")
-      for _, line in ipairs(section.lines) do
+      for _, line in ipairs(SectionLinesForDifficulty(section)) do
         GameTooltip:AddLine(line, 0.9, 0.9, 0.9, true)
       end
       GameTooltip:AddLine(" ")
@@ -1181,6 +1442,8 @@ local function BuildUI()
       end
       if MythicHandHoldingDB.testMode then
         GameTooltip:AddLine("Click to echo locally (Test Mode).", 1, 0.5, 0.5)
+      elseif MythicHandHoldingDB.sayMode then
+        GameTooltip:AddLine("Click to say locally (/s).", 0.8, 0.9, 0.6)
       elseif lineCount > 1 then
         GameTooltip:AddLine(
           ("Click to broadcast 1 line (%d clicks for full section)."):format(lineCount),
@@ -1194,15 +1457,15 @@ local function BuildUI()
     b:SetScript("OnLeave", function() GameTooltip:Hide() end)
   end
 
-  local function PreBuildDungeon(dIdx, dungeon, topY)
-    local c = CreateFrame("Frame", "MHHDungeon" .. dIdx, f)
+  local function PreBuildContent(mode, idx, entry, topY)
+    local c = CreateFrame("Frame", ("MHHContent_%s_%d"):format(mode, idx), f)
     c:Hide()
     c:SetPoint("TOPLEFT", f, "TOPLEFT", FRAME_PAD, topY)
-    c:SetSize(SECTION_W, #dungeon.sections * SECTION_STEP)
+    c:SetSize(SECTION_W, #entry.sections * SECTION_STEP)
     local y = 0
-    for sIdx, section in ipairs(dungeon.sections) do
-      local btnName = "MHHSection_D" .. dIdx .. "_S" .. sIdx
-      local clickKey = ClickCountKey(dIdx, sIdx)
+    for sIdx, section in ipairs(entry.sections) do
+      local btnName = ("MHHSection_%s_%d_S%d"):format(mode, idx, sIdx)
+      local clickKey = ClickCountKey(mode, idx, sIdx)
       local b = MakeSectionButton(c, section, SECTION_W, btnName, clickKey)
       b:SetPoint("TOPLEFT", c, "TOPLEFT", 0, y)
       AttachSectionHooks(b, section)
@@ -1213,18 +1476,37 @@ local function BuildUI()
   end
 
   ShowTab = function(idx)
-    if idx < 1 or idx > #DUNGEONS then return end
+    local list = ActiveList()
+    if idx < 1 or idx > #list then return end
     currentTab = idx
-    for i, c in ipairs(dungeonContainers) do
-      if i == idx then c:Show() else c:Hide() end
+    for mode, containers in pairs(contentContainers) do
+      for i, c in ipairs(containers) do
+        if mode == currentMode and i == idx then c:Show() else c:Hide() end
+      end
     end
     f:SetHeight(FrameHeightForTab(idx))
     RefreshDropdown()
   end
 
+  ShowMode = function(mode, idx)
+    if mode ~= "mplus" and mode ~= "raid" then return end
+    if #ContentList(mode) == 0 then return end
+    currentMode = mode
+    MythicHandHoldingDB.contentMode = mode
+    UpdateModeButtons()
+    ShowTab(idx or 1)
+  end
+
+  modeMplus:SetScript("OnClick", function() ShowMode("mplus", 1) end)
+  modeRaid:SetScript("OnClick", function() ShowMode("raid", 1) end)
+  UpdateModeButtons()
+
   wipe(_liveSectionButtons)
   for i, dungeon in ipairs(DUNGEONS) do
-    dungeonContainers[i] = PreBuildDungeon(i, dungeon, sectionTopY)
+    contentContainers.mplus[i] = PreBuildContent("mplus", i, dungeon, sectionTopY)
+  end
+  for i, raid in ipairs(RAIDS) do
+    contentContainers.raid[i] = PreBuildContent("raid", i, raid, sectionTopY)
   end
 
   local testCheck = CreateFrame("CheckButton", "MythicHandHoldingTestCheck",
@@ -1273,10 +1555,44 @@ local function BuildUI()
   end)
   plainCheck:SetScript("OnLeave", function() GameTooltip:Hide() end)
 
-  if #DUNGEONS > 0 then ShowTab(pendingTab or 1) end
+  local sayCheck = CreateFrame("CheckButton", "MythicHandHoldingSayCheck",
+                                f, "UICheckButtonTemplate")
+  sayCheck:SetSize(20, 20)
+  sayCheck:SetPoint("BOTTOMLEFT", plainCheck, "TOPLEFT", 0, 2)
+  sayCheck:SetChecked(MythicHandHoldingDB.sayMode and true or false)
+  local sayLabel = f:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+  sayLabel:SetPoint("LEFT", sayCheck, "RIGHT", 2, 1)
+  sayLabel:SetText("Say (/s)")
+  sayCheck:SetScript("OnClick", function(self)
+    if InCombatLockdown() then
+      self:SetChecked(MythicHandHoldingDB.sayMode)
+      Print("|cffff5555can't toggle Say Mode in combat|r - leave combat first.")
+      return
+    end
+    MythicHandHoldingDB.sayMode = self:GetChecked() and true or false
+    Print(MythicHandHoldingDB.sayMode and "Say Mode ON - tips go to /s (local say)"
+                                       or "Say Mode OFF - broadcasting to party/instance")
+    RefreshAllMacros()
+  end)
+  sayCheck:SetScript("OnEnter", function(self)
+    GameTooltip:SetOwner(self, "ANCHOR_TOP")
+    GameTooltip:SetText("Say Mode", 1, 1, 1)
+    GameTooltip:AddLine("Broadcasts each tip to local /s instead of party or instance chat.", 0.8, 0.8, 0.8, true)
+    GameTooltip:AddLine("Useful for world bosses or solo practice.", 0.8, 0.6, 0.6, true)
+    GameTooltip:Show()
+  end)
+  sayCheck:SetScript("OnLeave", function() GameTooltip:Hide() end)
+
+  if #DUNGEONS > 0 or #RAIDS > 0 then
+    local startMode = pendingMode or MythicHandHoldingDB.contentMode or "mplus"
+    if #ContentList(startMode) == 0 then
+      startMode = (#DUNGEONS > 0) and "mplus" or "raid"
+    end
+    ShowMode(startMode, pendingTab or 1)
+  end
   -- Default-hidden: open via minimap, /mhh, or instance auto-open.
   f:Hide()
-  return { frame = f, ShowTab = ShowTab }
+  return { frame = f, ShowTab = ShowTab, ShowMode = ShowMode, SyncRaidDiff = SyncRaidDiff }
 end
 
 local function EnsureUI()
@@ -1388,79 +1704,527 @@ end
 --=====================================================================
 --  AUTO-TAB ON ZONE-IN
 --=====================================================================
-local function FindDungeonForCurrentInstance()
+local function FindContentForCurrentInstance()
   if not IsInInstance() then return nil end
-  local name = GetInstanceInfo()
+  local name, instType = GetInstanceInfo()
   if not name or name == "" then return nil end
   local n = Norm(name)
-  for i, d in ipairs(DUNGEONS) do
-    local dn = Norm(d.name)
+  local mode = (instType == "raid") and "raid" or "mplus"
+  local list = ContentList(mode)
+  for i, entry in ipairs(list) do
+    local dn = Norm(entry.name)
     if n == dn or n:find(dn, 1, true) or dn:find(n, 1, true) then
-      return i, d
+      return mode, i, entry
     end
   end
   return nil
 end
 
 local function MaybeAutoSwitchTab()
-  local idx, dungeon = FindDungeonForCurrentInstance()
+  local mode, idx, entry = FindContentForCurrentInstance()
   if not idx then return end
+  pendingMode = mode
   pendingTab = idx
-  if ui and ui.ShowTab then
-    ui.ShowTab(idx)
+  if mode == "raid" then
+    local _, _, difficultyID = GetInstanceInfo()
+    if IsRaidDifficulty(difficultyID) then
+      SetRaidDifficulty(difficultyID, true)
+    end
+  end
+  if ui and ui.ShowMode then
+    ui.ShowMode(mode, idx)
     C_Timer.After(0, function()
       if ui and ui.frame then ui.frame:Show() end
     end)
-    Print("auto-switched to " .. dungeon.name .. " (window opened)")
+    local extra = ""
+    if mode == "raid" then
+      extra = ", " .. (RAID_DIFF_LABELS[GetActiveRaidDifficulty()] or "?")
+    end
+    Print("auto-switched to " .. entry.name .. " (" .. mode .. extra .. ", window opened)")
   end
 end
 
 --=====================================================================
---  /mhh ej - dump encounter IDs for the current instance
+--  /mhh ej — Adventure Guide / Encounter Journal dumps
+--  Works from anywhere (no need to be inside the raid).
 --=====================================================================
-local function DumpEncounterJournal()
-  if not IsInInstance() then
-    Print("not in an instance - run /mhh ej while in the dungeon.")
-    return
-  end
-  local instName = GetInstanceInfo()
-  -- Load the EJ UI module so EJ_* APIs return live data.
+local function EnsureEJ()
   if not EncounterJournal and EncounterJournal_LoadUI then
     pcall(EncounterJournal_LoadUI)
   end
-  if not EJ_GetEncounterInfoByIndex then
-    Print("EJ API not available.")
-    return
-  end
-  -- EJ_GetCurrentInstance returns the EJ instance ID for the current
-  -- zone (NOT the same as GetInstanceInfo's map ID).  This is the ID
-  -- EJ_SelectInstance actually wants.
-  local ejInstID
-  if EJ_GetCurrentInstance then
-    ejInstID = EJ_GetCurrentInstance()
-  end
-  if not ejInstID or ejInstID == 0 then
-    Print(("=== %s ==="):format(instName or "?"))
-    Print("|cffff5555EJ_GetCurrentInstance returned 0|r - this dungeon may not be in the Encounter Journal yet.")
-    return
-  end
+  return EJ_GetEncounterInfoByIndex ~= nil
+end
+
+local function EJSetDumpDifficulty()
+  local diff = GetActiveRaidDifficulty()
+  if EJ_SetDifficulty then pcall(EJ_SetDifficulty, diff) end
+  return diff
+end
+
+local function DumpEncountersForInstance(ejInstID, instName)
   pcall(EJ_SelectInstance, ejInstID)
-  Print(("=== %s (EJ instanceID %d) ==="):format(instName or "?", ejInstID))
-  local i = 1
-  local listed = 0
+  local diff = EJSetDumpDifficulty()
+  Print(("=== %s (EJ instanceID %d, journal diff %s) ==="):format(
+    instName or "?", ejInstID, RAID_DIFF_LABELS[diff] or tostring(diff)))
+  local i, listed = 1, 0
   while true do
-    local name, _, encID = EJ_GetEncounterInfoByIndex(i)
+    local name, _, encID, rootSec = EJ_GetEncounterInfoByIndex(i)
     if not name then break end
-    Print(("  [\"%s\"] = %s,"):format(name, tostring(encID)))
+    if rootSec and rootSec > 0 then
+      Print(("  [\"%s\"] = %s,  -- rootSection %s"):format(name, tostring(encID), tostring(rootSec)))
+    else
+      Print(("  [\"%s\"] = %s,"):format(name, tostring(encID)))
+    end
     listed = listed + 1
     i = i + 1
-    if i > 30 then break end
+    if i > 40 then break end
   end
   if listed == 0 then
     Print("no encounters returned.")
   else
-    Print(("paste %d line(s) above into BOSS_IDS in the .lua file."):format(listed))
+    Print(("paste %d line(s) into MHH_Raids.bossIds.  /mhh ej spells <boss> for abilities."):format(listed))
   end
+end
+
+local function CompactKey(s)
+  return Norm(s):gsub("%s+", "")
+end
+
+local function FindEJInstance(query)
+  query = Norm(query)
+  local qCompact = CompactKey(query)
+  if query:match("^%d+$") then
+    local id = tonumber(query)
+    for isRaid = 1, 0, -1 do
+      local i = 1
+      while true do
+        local instanceID, name = EJ_GetInstanceByIndex(i, isRaid == 1)
+        if not instanceID then break end
+        if instanceID == id then return instanceID, name end
+        i = i + 1
+        if i > 200 then break end
+      end
+    end
+    return id, ("instance %d"):format(id)
+  end
+
+  -- Prefer pinned IDs from the raid pack (aliases like "queldanas").
+  if MHH_Raids and MHH_Raids.instanceIds then
+    for name, id in pairs(MHH_Raids.instanceIds) do
+      local n = Norm(name)
+      local nc = CompactKey(name)
+      if n == query or nc == qCompact
+          or nc:find(qCompact, 1, true) or qCompact:find(nc, 1, true) then
+        return id, name
+      end
+    end
+  end
+  -- Common shortcuts.
+  local aliases = {
+    queldanas = "March on Quel'Danas",
+    quel = "March on Quel'Danas",
+    mqd = "March on Quel'Danas",
+    voidspire = "The Voidspire",
+    dreamrift = "The Dreamrift",
+    sporefall = "Sporefall",
+    worldbosses = "Midnight",
+    wb = "Midnight",
+  }
+  if aliases[qCompact] and MHH_Raids and MHH_Raids.instanceIds then
+    local name = aliases[qCompact]
+    local id = MHH_Raids.instanceIds[name]
+    if id then return id, name end
+  end
+
+  local bestID, bestName, bestScore = nil, nil, 0
+  for isRaid = 1, 0, -1 do
+    local i = 1
+    while true do
+      local instanceID, name = EJ_GetInstanceByIndex(i, isRaid == 1)
+      if not instanceID then break end
+      local n = Norm(name)
+      local nc = CompactKey(name)
+      local score = 0
+      if n == query or nc == qCompact then
+        return instanceID, name
+      end
+      -- "queldanas" matches "march on quel danas" via compact substring.
+      if #qCompact >= 4 and nc:find(qCompact, 1, true) then score = score + 3 end
+      if #nc >= 4 and qCompact:find(nc, 1, true) then score = score + 2 end
+      if n:find(query, 1, true) or query:find(n, 1, true) then score = score + 1 end
+      if score > bestScore then
+        bestScore, bestID, bestName = score, instanceID, name
+      end
+      i = i + 1
+      if i > 200 then break end
+    end
+  end
+  return bestID, bestName
+end
+
+local function ListEJInstances(raidsOnly)
+  if not EnsureEJ() or not EJ_GetInstanceByIndex then
+    Print("EJ API not available.")
+    return
+  end
+  Print(raidsOnly and "=== Adventure Guide raids ===" or "=== Adventure Guide instances ===")
+  local listed = 0
+  for isRaid = 1, (raidsOnly and 1 or 0), -1 do
+    if not raidsOnly then
+      Print(isRaid == 1 and "-- Raids --" or "-- Dungeons --")
+    end
+    local i = 1
+    while true do
+      local instanceID, name = EJ_GetInstanceByIndex(i, isRaid == 1)
+      if not instanceID then break end
+      Print(("  %d  %s"):format(instanceID, name))
+      listed = listed + 1
+      i = i + 1
+      if i > 200 then break end
+    end
+  end
+  Print(("listed %d.  /mhh ej <name or id> to dump bosses."):format(listed))
+end
+
+local function WalkEJSections(sectionID, depth, seen, out)
+  out = out or {}
+  if not sectionID or sectionID == 0 or depth > 16 then return out end
+  if seen[sectionID] then return out end
+  seen[sectionID] = true
+  local info
+  if C_EncounterJournal and C_EncounterJournal.GetSectionInfo then
+    info = C_EncounterJournal.GetSectionInfo(sectionID)
+  end
+  if type(info) == "table" then
+    local title = info.title or "?"
+    local spellID = info.spellID
+    if spellID and spellID > 0 and not out[spellID] then
+      out[spellID] = title
+    end
+    if info.firstChildSectionID then
+      WalkEJSections(info.firstChildSectionID, depth + 1, seen, out)
+    end
+    if info.siblingSectionID then
+      WalkEJSections(info.siblingSectionID, depth + 1, seen, out)
+    end
+  elseif EJ_GetSectionInfo then
+    -- Legacy multi-return form (patch-dependent order).
+    local a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14 =
+      EJ_GetSectionInfo(sectionID)
+    local title, spellID, nextSec, firstChild
+    if type(a1) == "table" then
+      title = a1.title
+      spellID = a1.spellID
+      nextSec = a1.siblingSectionID
+      firstChild = a1.firstChildSectionID
+    else
+      title = a1
+      -- Common retail layout: spellID near the end before sibling/child.
+      spellID = a9
+      if type(spellID) ~= "number" then spellID = a10 end
+      nextSec = a13
+      firstChild = a14
+    end
+    if type(spellID) == "number" and spellID > 0 and not out[spellID] then
+      out[spellID] = title or "?"
+    end
+    if firstChild then WalkEJSections(firstChild, depth + 1, seen, out) end
+    if nextSec then WalkEJSections(nextSec, depth + 1, seen, out) end
+  end
+  return out
+end
+
+-- Pull |Hspell:id|h[Name]|h links out of any fontstring under a frame.
+local function ScrapeSpellLinksFromFrame(frame, out, depth)
+  out = out or {}
+  if not frame or depth > 20 then return out end
+  local regions = { frame:GetRegions() }
+  for _, r in ipairs(regions) do
+    if r and r.GetText then
+      local text = r:GetText()
+      if text and text:find("|Hspell:", 1, true) then
+        for id, name in text:gmatch("|Hspell:(%d+)|h%[(.-)%]|h") do
+          id = tonumber(id)
+          if id and id > 0 and not out[id] then out[id] = name end
+        end
+      end
+    end
+  end
+  local kids = { frame:GetChildren() }
+  for _, child in ipairs(kids) do
+    ScrapeSpellLinksFromFrame(child, out, depth + 1)
+  end
+  return out
+end
+
+local function PrintSpellMap(spellMap)
+  local n = 0
+  local order = {}
+  for id, title in pairs(spellMap) do
+    order[#order + 1] = { id = id, title = title }
+  end
+  table.sort(order, function(a, b) return a.title < b.title end)
+  for _, e in ipairs(order) do
+    Print(("  [\"%s\"] = %d,"):format(e.title, e.id))
+    n = n + 1
+  end
+  return n
+end
+
+-- Resolve rootSectionID: instance must be selected first or EJ returns nil/0.
+local function ResolveEncounterRoot(encID)
+  local name, _, _, root, _, journalInstanceID = EJ_GetEncounterInfo(encID)
+  if root and root > 0 then return root, name, journalInstanceID end
+
+  -- Select journal instance from known pack, then retry.
+  if journalInstanceID and journalInstanceID > 0 and EJ_SelectInstance then
+    pcall(EJ_SelectInstance, journalInstanceID)
+    EJSetDumpDifficulty()
+    name, _, _, root = EJ_GetEncounterInfo(encID)
+    if root and root > 0 then return root, name, journalInstanceID end
+  end
+
+  -- Walk every raid/dungeon instance until this encounter appears.
+  if EJ_GetInstanceByIndex and EJ_GetEncounterInfoByIndex then
+    for isRaid = 1, 0, -1 do
+      local i = 1
+      while true do
+        local instanceID = EJ_GetInstanceByIndex(i, isRaid == 1)
+        if not instanceID then break end
+        pcall(EJ_SelectInstance, instanceID)
+        EJSetDumpDifficulty()
+        local j = 1
+        while true do
+          local eName, _, eID, eRoot = EJ_GetEncounterInfoByIndex(j)
+          if not eName then break end
+          if eID == encID then
+            return eRoot, eName, instanceID
+          end
+          j = j + 1
+          if j > 40 then break end
+        end
+        i = i + 1
+        if i > 200 then break end
+      end
+    end
+  end
+
+  -- Open Adventure Guide selection (if user has the boss page open).
+  if EncounterJournal and EncounterJournal.encounterID == encID then
+    name, _, _, root, _, journalInstanceID = EJ_GetEncounterInfo(encID)
+    if root and root > 0 then return root, name, journalInstanceID end
+  end
+
+  return nil, name, journalInstanceID
+end
+
+local function DumpSpellsForEncounter(encID, encName)
+  local diff = EJSetDumpDifficulty()
+  if EJ_SelectEncounter then pcall(EJ_SelectEncounter, encID) end
+
+  local rootSectionID, resolvedName, journalInstanceID = ResolveEncounterRoot(encID)
+  encName = resolvedName or encName
+
+  Print(("=== spells: %s (encounter %d, journal diff %s) ==="):format(
+    encName or "?", encID, RAID_DIFF_LABELS[diff] or tostring(diff)))
+
+  local spellMap = {}
+
+  if rootSectionID and rootSectionID > 0 then
+    WalkEJSections(rootSectionID, 0, {}, spellMap)
+  else
+    Print("root section missing — trying open Adventure Guide frames…")
+  end
+
+  -- Always scrape the open EJ UI (overview bullets embed |Hspell:| links).
+  if EncounterJournal then
+    ScrapeSpellLinksFromFrame(EncounterJournal, spellMap, 0)
+  end
+
+  local n = PrintSpellMap(spellMap)
+  if n == 0 then
+    Print("no spell IDs found.")
+    Print("open Adventure Guide on the boss Abilities tab, hover a spell, then:")
+    Print("  /mhh ej mouse")
+    if journalInstanceID then
+      Print(("journal instanceID was %d — try /mhh ej %d first."):format(journalInstanceID, journalInstanceID))
+    end
+  else
+    Print(("paste %d line(s) into MHH_Raids.spellIds (or spellIdsByDiff[%d])."):format(n, diff))
+  end
+end
+
+-- Spell ID under the mouse (GameTooltip / EJ ability tooltip).
+local function DumpMouseSpell()
+  local spellID, name
+
+  local function fromTooltip(tip)
+    if not tip or not tip:IsShown() then return end
+    if tip.GetSpell then
+      local n, id = tip:GetSpell()
+      if id and id > 0 then return id, n end
+    end
+    if tip.GetTooltipData then
+      local data = tip:GetTooltipData()
+      if data and data.id and data.id > 0 then
+        local isSpell = true
+        if Enum and Enum.TooltipDataType and data.type then
+          isSpell = (data.type == Enum.TooltipDataType.Spell)
+        end
+        if isSpell then
+          return data.id, data.lines and data.lines[1] and data.lines[1].leftText
+        end
+      end
+    end
+    for i = 1, 40 do
+      local fs = _G[tip:GetName() and (tip:GetName() .. "TextLeft" .. i)]
+      local text = fs and fs:GetText()
+      if text then
+        local id, n = text:match("|Hspell:(%d+)|h%[(.-)%]|h")
+        if id then return tonumber(id), n end
+      end
+    end
+  end
+
+  spellID, name = fromTooltip(GameTooltip)
+  if not spellID then spellID, name = fromTooltip(ItemRefTooltip) end
+  if not spellID then spellID, name = fromTooltip(_G.EmbeddedItemTooltip) end
+
+  if spellID and spellID > 0 then
+    Print(("  [\"%s\"] = %d,"):format(name or ("spell:" .. spellID), spellID))
+  else
+    Print("no spell on tooltip — hover an ability in Adventure Guide, then /mhh ej mouse")
+  end
+end
+
+local function FindEncounterByQuery(query)
+  query = Norm(query)
+  if query:match("^%d+$") then
+    local id = tonumber(query)
+    local name = EJ_GetEncounterInfo and EJ_GetEncounterInfo(id)
+    return id, name or ("encounter %d"):format(id)
+  end
+  -- Search known BOSS_IDS first.
+  for name, id in pairs(BOSS_IDS) do
+    if Norm(name) == query or Norm(name):find(query, 1, true) then
+      return id, name
+    end
+  end
+  -- Scan currently selected instance encounters.
+  local i = 1
+  while EJ_GetEncounterInfoByIndex do
+    local name, _, encID = EJ_GetEncounterInfoByIndex(i)
+    if not name then break end
+    local n = Norm(name)
+    if n == query or n:find(query, 1, true) then return encID, name end
+    i = i + 1
+    if i > 40 then break end
+  end
+  return nil
+end
+
+local function HandleEJCommand(rest)
+  rest = (rest or ""):match("^%s*(.-)%s*$") or ""
+  if not EnsureEJ() then
+    Print("EJ API not available — open Adventure Guide (Shift-J) once, then retry.")
+    return
+  end
+
+  local sub, arg2 = rest:match("^(%S+)%s*(.-)$")
+  sub = (sub or ""):lower()
+  arg2 = (arg2 or ""):match("^%s*(.-)%s*$") or ""
+
+  if sub == "help" or sub == "?" then
+    Print("Adventure Guide dumps (no need to be in the raid):")
+    Print("  /mhh ej list              — list raid instances")
+    Print("  /mhh ej list all          — raids + dungeons")
+    Print("  /mhh ej <name or id>      — boss encounter IDs")
+    Print("  /mhh ej spells <boss|id>  — ability spell IDs")
+    Print("  /mhh ej mouse             — spell ID from hovered tooltip")
+    Print("  /mhh ej diff lfr|n|h|m    — journal difficulty for dumps")
+    Print("  /mhh ej                   — current instance (if inside one)")
+    Print("  /mhh ej help              — this text")
+    return
+  end
+
+  if sub == "mouse" or sub == "tip" or sub == "tooltip" then
+    DumpMouseSpell()
+    return
+  end
+
+  if sub == "list" then
+    ListEJInstances(arg2:lower() ~= "all")
+    return
+  end
+
+  if sub == "diff" then
+    local map = {
+      lfr = 17, l = 17, ["17"] = 17,
+      n = 14, normal = 14, ["14"] = 14,
+      h = 15, heroic = 15, ["15"] = 15,
+      m = 16, mythic = 16, ["16"] = 16,
+    }
+    local id = map[arg2:lower()]
+    if not id then
+      Print("usage: /mhh ej diff lfr|normal|heroic|mythic")
+      return
+    end
+    SetRaidDifficulty(id)
+    if EJ_SetDifficulty then pcall(EJ_SetDifficulty, id) end
+    return
+  end
+
+  if sub == "spells" or sub == "spell" then
+    if arg2 == "" then
+      Print("usage: /mhh ej spells <boss name or encounter id>")
+      return
+    end
+    -- Prefer selecting the raid instance first if we can match a known raid.
+    for _, raid in ipairs(RAIDS) do
+      if Norm(arg2):find(Norm(raid.name), 1, true) then
+        local id, name = FindEJInstance(raid.name)
+        if id then
+          pcall(EJ_SelectInstance, id)
+          EJSetDumpDifficulty()
+        end
+        break
+      end
+    end
+    local encID, encName = FindEncounterByQuery(arg2)
+    if not encID then
+      Print("boss not found — /mhh ej <raid> first, then /mhh ej spells <boss>.")
+      return
+    end
+    DumpSpellsForEncounter(encID, encName)
+    return
+  end
+
+  -- Treat whole rest as instance query (e.g. "voidspire", "sporefall", "1234")
+  -- Empty / "here" = current instance when inside one.
+  local query = rest
+  if query == "" or query == "here" then
+    if not IsInInstance() then
+      Print("not in an instance.  /mhh ej list  or  /mhh ej <raid name>")
+      return
+    end
+    local instName = GetInstanceInfo()
+    local ejInstID = EJ_GetCurrentInstance and EJ_GetCurrentInstance()
+    if not ejInstID or ejInstID == 0 then
+      Print(("=== %s ==="):format(instName or "?"))
+      Print("|cffff5555EJ_GetCurrentInstance returned 0|r — try /mhh ej list and /mhh ej <name>.")
+      return
+    end
+    DumpEncountersForInstance(ejInstID, instName)
+    return
+  end
+
+  local ejInstID, instName = FindEJInstance(query)
+  if not ejInstID then
+    Print("instance not found: " .. query)
+    Print("try /mhh ej list")
+    return
+  end
+  DumpEncountersForInstance(ejInstID, instName)
 end
 
 --=====================================================================
@@ -1481,12 +2245,21 @@ end
 --=====================================================================
 SLASH_MYTHICHANDHOLDING1 = "/mhh"
 SLASH_MYTHICHANDHOLDING2 = "/mythichandholding"
-SlashCmdList["MYTHICHANDHOLDING"] = function(arg)
-  arg = (arg or ""):lower():gsub("%s+", "")
-  if arg == "ping" then
-    Print("alive, v" .. VERSION ..
-          (MythicHandHoldingDB.testMode and " (Test Mode - local chat only)" or ""))
-  elseif arg == "test" then
+SlashCmdList["MYTHICHANDHOLDING"] = function(msg)
+  msg = (msg or ""):match("^%s*(.-)%s*$") or ""
+  local cmd, rest = msg:match("^(%S+)%s*(.*)$")
+  cmd = (cmd or ""):lower()
+  rest = (rest or ""):match("^%s*(.-)%s*$") or ""
+
+  if cmd == "" then
+    ToggleWindow()
+  elseif cmd == "ping" then
+    Print("alive, v" .. VERSION
+      .. " [" .. (MythicHandHoldingDB.contentMode or "mplus") .. "/"
+      .. (RAID_DIFF_LABELS[GetActiveRaidDifficulty()] or "?") .. "]"
+      .. (MythicHandHoldingDB.testMode and " (Test Mode)"
+          or MythicHandHoldingDB.sayMode and " (Say Mode)" or ""))
+  elseif cmd == "test" then
     if InCombatLockdown() then
       Print("|cffff5555can't toggle Test Mode in combat|r - leave combat first.")
     else
@@ -1498,33 +2271,63 @@ SlashCmdList["MYTHICHANDHOLDING"] = function(arg)
       Print(MythicHandHoldingDB.testMode and "Test Mode ON - local chat only, no broadcast"
                                          or "Test Mode OFF - broadcasting to party/instance")
     end
-  elseif arg == "reset" then
+  elseif cmd == "reset" then
     MythicHandHoldingDB.point = "CENTER"
     MythicHandHoldingDB.x = 0; MythicHandHoldingDB.y = 0
     Print("position reset")
-  elseif arg == "auto" then
+  elseif cmd == "auto" then
     MaybeAutoSwitchTab()
-  elseif arg == "ej" then
-    DumpEncounterJournal()
-  elseif arg == "minimap" then
+  elseif cmd == "ej" then
+    HandleEJCommand(rest)
+  elseif cmd == "diff" or cmd == "difficulty" then
+    local map = {
+      lfr = 17, l = 17, ["17"] = 17,
+      n = 14, normal = 14, ["14"] = 14,
+      h = 15, heroic = 15, ["15"] = 15,
+      m = 16, mythic = 16, ["16"] = 16,
+    }
+    local id = map[rest:lower()]
+    if not id then
+      Print("usage: /mhh diff lfr|normal|heroic|mythic")
+      Print("current: " .. (RAID_DIFF_LABELS[GetActiveRaidDifficulty()] or "?"))
+    else
+      SetRaidDifficulty(id)
+    end
+  elseif cmd == "minimap" then
     MythicHandHoldingDB.minimapHide = not MythicHandHoldingDB.minimapHide
     UpdateMinimapShown()
     Print(MythicHandHoldingDB.minimapHide and "minimap button hidden" or "minimap button shown")
-  elseif arg == "debug" then
+  elseif cmd == "debug" then
     MythicHandHoldingDB.debug = not MythicHandHoldingDB.debug
     Print(MythicHandHoldingDB.debug
       and "debug ON - >> [chan] and << echo lines will appear locally"
       or  "debug OFF")
-  elseif arg == "plain" then
+  elseif cmd == "plain" then
     MythicHandHoldingDB.plainMode = not MythicHandHoldingDB.plainMode
     if _G["MythicHandHoldingPlainCheck"] then
       _G["MythicHandHoldingPlainCheck"]:SetChecked(MythicHandHoldingDB.plainMode)
     end
     Print("Plain Text " .. (MythicHandHoldingDB.plainMode and "ON" or "OFF"))
-  elseif arg == "" then
-    ToggleWindow()
+  elseif cmd == "say" then
+    if InCombatLockdown() then
+      Print("|cffff5555can't toggle Say Mode in combat|r - leave combat first.")
+    else
+      MythicHandHoldingDB.sayMode = not MythicHandHoldingDB.sayMode
+      if _G["MythicHandHoldingSayCheck"] then
+        _G["MythicHandHoldingSayCheck"]:SetChecked(MythicHandHoldingDB.sayMode)
+      end
+      RefreshAllMacros()
+      Print(MythicHandHoldingDB.sayMode and "Say Mode ON - tips go to /s (local say)"
+                                         or "Say Mode OFF - broadcasting to party/instance")
+    end
+  elseif cmd == "mplus" then
+    if ui and ui.ShowMode then ui.ShowMode("mplus", 1) end
+    Print("content mode: Mythic+ dungeons")
+  elseif cmd == "raid" then
+    if ui and ui.ShowMode then ui.ShowMode("raid", 1) end
+    Print("content mode: raids")
   else
-    Print("unknown /mhh command: " .. arg)
+    Print("unknown /mhh command: " .. cmd)
   end
 end
 

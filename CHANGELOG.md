@@ -1,5 +1,41 @@
 # Mythic Hand Holding - Changelog
 
+## 1.1.0-alpha.5 (issue #4 — world bosses + say chat)
+
+- **Say Mode** — checkbox and `/mhh say` broadcast tips to local `/s` instead of
+  party/instance chat (closes #4).
+- World bosses (Lu'ashal, Cragpine, Thorm'belan, Predaxas) were added in alpha.2;
+  spell IDs for Thorm'belan and Predaxas verified in alpha.4.
+
+## 1.1.0-alpha.4
+
+- Thorm'belan and Predaxas world boss spell IDs from Adventure Guide.
+- Linkify uses separate M+ vs raid spell name lists (fewer false matches).
+- Fix `IsInInstance()` call when reading live raid difficulty.
+- Spread `RefreshAllMacros` across frames to avoid secure-update hitch.
+
+## 1.1.0-alpha.2 (issue #2 — raids alpha)
+
+- **Verified encounter IDs** from Adventure Guide (Voidspire, Dreamrift, Quel'Danas, Sporefall, world bosses).
+- **Sporefall** (patch 12.0.7): Rotmire single-boss raid with Normal/Heroic/Mythic tip variants.
+- **World Bosses** entry (Lu'ashal, Cragpine, Thorm'belan, Predaxas) from EJ "Midnight".
+- `/mhh ej queldanas` (and similar shortcuts) resolve March on Quel'Danas.
+- **Raid difficulty UI:** LFR / N / H / M buttons; auto-detects when you zone into a raid.
+- **Difficulty-specific tips:** `extraByDiff` lines append for the active difficulty; journal links use it too.
+- **Adventure Guide dumps (no need to be inside the raid):**
+  - `/mhh ej list` — list raid instances
+  - `/mhh ej <name|id>` — boss encounter IDs
+  - `/mhh ej spells <boss|id>` — ability spell IDs
+  - `/mhh ej diff` / `/mhh diff` — set journal difficulty for dumps and callouts
+
+## 1.1.0-alpha.1 (issue #2 — raids alpha)
+
+- **Raid mode (alpha):** M+ / Raid toggle in the window; auto-selects raids on zone-in.
+- **Midnight S1 raids:** The Voidspire (6 bosses), The Dreamrift (Chimaerus), March on Quel'Danas (Belo'ren, Midnight Falls).
+- **Data split:** `MythicHandHolding_Raids.lua` holds raid tips, boss encounter IDs, and future tier packs.
+- **New commands:** `/mhh mplus`, `/mhh raid` switch content mode.
+- Encounter/spell IDs are placeholders until verified with `/mhh ej`.
+
 ## 1.0.36
 
 - Set `X-Curse-Project-ID` so GitHub Actions can upload releases to CurseForge.
