@@ -36,6 +36,7 @@ Enable **Load out of date AddOns** if the Interface number lags a patch.
 | `/mhh ping` | Version / alive check |
 | `/mhh test` | Local echo only (no party chat) |
 | `/mhh plain` | Toggle spell/boss hyperlinks in chat |
+| `/mhh say` | Toggle Say Mode (broadcast to `/s` instead of party/instance) |
 | `/mhh debug` | Verbose macro dump on click |
 | `/mhh auto` | Re-detect instance and switch content |
 | `/mhh mplus` | Switch to Mythic+ dungeon list |

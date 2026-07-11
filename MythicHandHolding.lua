@@ -1,5 +1,5 @@
 --=====================================================================
---  MythicHandHolding  v1.1.0-alpha.2
+--  MythicHandHolding  v1.1.0-alpha.5
 --  Midnight Season 1 M+ dungeons and raid callouts (raids alpha, issue #2).
 --  New in 1.0.6: chat hyperlinks for spells and bosses.
 --    * SPELL_IDS table: known spell name -> spell ID.
@@ -10,7 +10,7 @@
 --      new IDs can be copy/pasted into BOSS_IDS.
 --=====================================================================
 
-local VERSION  = "1.1.0-alpha.2"
+local VERSION  = "1.1.0-alpha.5"
 
 MythicHandHoldingDB = MythicHandHoldingDB or {}
 
@@ -29,6 +29,9 @@ local function EnsureDB()
     MythicHandHoldingDB.raidDifficulty = 14
   end
   MythicHandHoldingDB.debug = MythicHandHoldingDB.debug or false
+  if MythicHandHoldingDB.sayMode == nil then
+    MythicHandHoldingDB.sayMode = false
+  end
   if type(MythicHandHoldingDB.clickCounts) ~= "table" then
     MythicHandHoldingDB.clickCounts = {}
   end
@@ -394,7 +397,7 @@ end
 -- Prefers live instance difficulty when inside a raid.
 local function GetActiveRaidDifficulty()
   EnsureDB()
-  if IsInInstance then
+  if IsInInstance() then
     local _, instType, difficultyID = GetInstanceInfo()
     if instType == "raid" and IsRaidDifficulty(difficultyID) then
       return difficultyID
@@ -402,6 +405,8 @@ local function GetActiveRaidDifficulty()
   end
   return MythicHandHoldingDB.raidDifficulty or 14
 end
+
+local RefreshAllMacros  -- forward decl (SetRaidDifficulty is defined above its body)
 
 local function ActiveSpellId(name)
   local byDiff = RAID_SPELL_BY_DIFF[GetActiveRaidDifficulty()]
@@ -830,7 +835,6 @@ local DUNGEONS = {
 local ui
 local pendingTab   = nil
 local pendingMode  = nil
-local RefreshAllMacros  -- forward decl (SetRaidDifficulty calls it)
 
 --=====================================================================
 --  HELPERS
@@ -905,7 +909,7 @@ local function MakeBossLink(encounterID, displayName, difficulty)
 end
 
 -- Pre-sort lookup keys longest-first so "Frost Nova" matches before "Frost".
-local _spellNamesByLen, _bossNamesByLen
+local _spellNamesByLen, _mplusSpellNamesByLen, _raidSpellNamesByLen, _bossNamesByLen
 local function RebuildRaidSpellLinkable()
   wipe(RAID_SPELL_LINKABLE)
   local names = {}
@@ -914,9 +918,11 @@ local function RebuildRaidSpellLinkable()
   local function consider(line)
     if not line or line == "" then return end
     for _, name in ipairs(names) do
-      local pat = "%f[%w]" .. PatEsc(name) .. "%f[%W]"
-      if line:find(pat) then
-        RAID_SPELL_LINKABLE[name] = RAID_SPELL_IDS[name]
+      if line:find(name, 1, true) then
+        local pat = "%f[%w]" .. PatEsc(name) .. "%f[%W]"
+        if line:find(pat) then
+          RAID_SPELL_LINKABLE[name] = RAID_SPELL_IDS[name]
+        end
       end
     end
   end
@@ -934,25 +940,47 @@ end
 
 local function RebuildLookupOrder()
   RebuildRaidSpellLinkable()
-  local spellSeen = {}
-  _spellNamesByLen = {}
-  local function addSpellName(n)
-    if n and not spellSeen[n] then
-      spellSeen[n] = true
-      _spellNamesByLen[#_spellNamesByLen+1] = n
+  local function sortByLen(list)
+    table.sort(list, function(a, b) return #a > #b end)
+  end
+  local function fillList(from, out, seen)
+    for n in pairs(from) do
+      if n and not seen[n] then
+        seen[n] = true
+        out[#out + 1] = n
+      end
     end
   end
-  for n in pairs(SPELL_IDS) do addSpellName(n) end
-  for n in pairs(RAID_SPELL_LINKABLE) do addSpellName(n) end
-  for _, map in pairs(RAID_SPELL_BY_DIFF) do
-    for n in pairs(map) do addSpellName(n) end
-  end
-  table.sort(_spellNamesByLen, function(a,b) return #a > #b end)
+
+  local seen = {}
+  _mplusSpellNamesByLen = {}
+  fillList(SPELL_IDS, _mplusSpellNamesByLen, seen)
+  sortByLen(_mplusSpellNamesByLen)
+
+  seen = {}
+  _raidSpellNamesByLen = {}
+  fillList(RAID_SPELL_LINKABLE, _raidSpellNamesByLen, seen)
+  sortByLen(_raidSpellNamesByLen)
+
+  seen = {}
+  _spellNamesByLen = {}
+  for _, n in ipairs(_mplusSpellNamesByLen) do fillList({ [n] = true }, _spellNamesByLen, seen) end
+  for _, n in ipairs(_raidSpellNamesByLen) do fillList({ [n] = true }, _spellNamesByLen, seen) end
+  sortByLen(_spellNamesByLen)
+
   _bossNamesByLen = {}
-  for n in pairs(BOSS_IDS) do _bossNamesByLen[#_bossNamesByLen+1] = n end
-  table.sort(_bossNamesByLen, function(a,b) return #a > #b end)
+  for n in pairs(BOSS_IDS) do _bossNamesByLen[#_bossNamesByLen + 1] = n end
+  sortByLen(_bossNamesByLen)
 end
 RebuildLookupOrder()
+
+local function SpellNamesForLinkify()
+  EnsureDB()
+  if (MythicHandHoldingDB.contentMode or "mplus") == "raid" then
+    return _raidSpellNamesByLen or _spellNamesByLen
+  end
+  return _mplusSpellNamesByLen or _spellNamesByLen
+end
 
 -- Replace known spell/boss names with their chat hyperlinks.  Uses
 -- word-boundary anchors so "Frost" doesn't eat the start of "Frost Nova".
@@ -967,23 +995,27 @@ local function Linkify(text)
     return ("\1MHH" .. #replacements .. "\1")
   end
 
-  for _, name in ipairs(_spellNamesByLen) do
-    local id = ActiveSpellId(name)
-    if id then
-      local pat = "%f[%w]" .. PatEsc(name) .. "%f[%W]"
-      text = text:gsub(pat, function()
-        return stash(MakeSpellLink(id, name))
-      end)
+  for _, name in ipairs(SpellNamesForLinkify()) do
+    if text:find(name, 1, true) then
+      local id = ActiveSpellId(name)
+      if id then
+        local pat = "%f[%w]" .. PatEsc(name) .. "%f[%W]"
+        text = text:gsub(pat, function()
+          return stash(MakeSpellLink(id, name))
+        end)
+      end
     end
   end
   for _, name in ipairs(_bossNamesByLen) do
-    local id = BOSS_IDS[name]
-    if id then
-      local diff = RAID_BOSS_NAMES[name] and GetActiveRaidDifficulty() or 23
-      local pat = "%f[%w]" .. PatEsc(name) .. "%f[%W]"
-      text = text:gsub(pat, function()
-        return stash(MakeBossLink(id, name, diff))
-      end)
+    if text:find(name, 1, true) then
+      local id = BOSS_IDS[name]
+      if id then
+        local diff = RAID_BOSS_NAMES[name] and GetActiveRaidDifficulty() or 23
+        local pat = "%f[%w]" .. PatEsc(name) .. "%f[%W]"
+        text = text:gsub(pat, function()
+          return stash(MakeBossLink(id, name, diff))
+        end)
+      end
     end
   end
   -- Restore placeholders.
@@ -1027,6 +1059,7 @@ end
 -- you don't have a home party.
 local function CurrentChatSlash()
   if MythicHandHoldingDB.testMode then return nil end
+  if MythicHandHoldingDB.sayMode then return "/s" end
   local inInst, instType = IsInInstance()
   if inInst and (instType == "party" or instType == "raid") then
     if IsInGroup(2) and not IsInGroup(1) then return "/i" end
@@ -1128,17 +1161,34 @@ local function AdvanceSectionMacro(visibleButton)
 end
 
 local UpdateLineBadge
+local refreshMacroGen = 0
 
-function RefreshAllMacros()
+RefreshAllMacros = function()
   if InCombatLockdown() then return end
-  for _, b in ipairs(_liveSectionButtons) do
-    if b._section then
-      b._lineIdx = 1
-      b._cycleSent = 0
-      BuildSectionMacro(b, b._section, 1)
-      UpdateLineBadge(b)
+  refreshMacroGen = refreshMacroGen + 1
+  local gen = refreshMacroGen
+  local idx = 1
+  local total = #_liveSectionButtons
+
+  local function step()
+    if gen ~= refreshMacroGen or InCombatLockdown() then return end
+    while idx <= total do
+      local b = _liveSectionButtons[idx]
+      idx = idx + 1
+      if b._section then
+        b._lineIdx = 1
+        b._cycleSent = 0
+        BuildSectionMacro(b, b._section, 1)
+        UpdateLineBadge(b)
+        break
+      end
+    end
+    if idx <= total then
+      C_Timer.After(0, step)
     end
   end
+
+  step()
 end
 
 local FRAME_W       = 224
@@ -1148,7 +1198,7 @@ local DROPDOWN_W    = SECTION_W - 36   -- UIDropDownMenuTemplate arrow chrome
 local SECTION_H    = 22
 local SECTION_STEP = 24
 local HEADER_H     = 72   -- title + mode row + dropdown
-local FOOTER_H     = 46   -- checkboxes
+local FOOTER_H     = 62   -- checkboxes
 
 function UpdateLineBadge(b)
   if not b or not b.lineBadge then return end
@@ -1392,6 +1442,8 @@ local function BuildUI()
       end
       if MythicHandHoldingDB.testMode then
         GameTooltip:AddLine("Click to echo locally (Test Mode).", 1, 0.5, 0.5)
+      elseif MythicHandHoldingDB.sayMode then
+        GameTooltip:AddLine("Click to say locally (/s).", 0.8, 0.9, 0.6)
       elseif lineCount > 1 then
         GameTooltip:AddLine(
           ("Click to broadcast 1 line (%d clicks for full section)."):format(lineCount),
@@ -1502,6 +1554,34 @@ local function BuildUI()
     GameTooltip:Show()
   end)
   plainCheck:SetScript("OnLeave", function() GameTooltip:Hide() end)
+
+  local sayCheck = CreateFrame("CheckButton", "MythicHandHoldingSayCheck",
+                                f, "UICheckButtonTemplate")
+  sayCheck:SetSize(20, 20)
+  sayCheck:SetPoint("BOTTOMLEFT", plainCheck, "TOPLEFT", 0, 2)
+  sayCheck:SetChecked(MythicHandHoldingDB.sayMode and true or false)
+  local sayLabel = f:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+  sayLabel:SetPoint("LEFT", sayCheck, "RIGHT", 2, 1)
+  sayLabel:SetText("Say (/s)")
+  sayCheck:SetScript("OnClick", function(self)
+    if InCombatLockdown() then
+      self:SetChecked(MythicHandHoldingDB.sayMode)
+      Print("|cffff5555can't toggle Say Mode in combat|r - leave combat first.")
+      return
+    end
+    MythicHandHoldingDB.sayMode = self:GetChecked() and true or false
+    Print(MythicHandHoldingDB.sayMode and "Say Mode ON - tips go to /s (local say)"
+                                       or "Say Mode OFF - broadcasting to party/instance")
+    RefreshAllMacros()
+  end)
+  sayCheck:SetScript("OnEnter", function(self)
+    GameTooltip:SetOwner(self, "ANCHOR_TOP")
+    GameTooltip:SetText("Say Mode", 1, 1, 1)
+    GameTooltip:AddLine("Broadcasts each tip to local /s instead of party or instance chat.", 0.8, 0.8, 0.8, true)
+    GameTooltip:AddLine("Useful for world bosses or solo practice.", 0.8, 0.6, 0.6, true)
+    GameTooltip:Show()
+  end)
+  sayCheck:SetScript("OnLeave", function() GameTooltip:Hide() end)
 
   if #DUNGEONS > 0 or #RAIDS > 0 then
     local startMode = pendingMode or MythicHandHoldingDB.contentMode or "mplus"
@@ -2177,7 +2257,8 @@ SlashCmdList["MYTHICHANDHOLDING"] = function(msg)
     Print("alive, v" .. VERSION
       .. " [" .. (MythicHandHoldingDB.contentMode or "mplus") .. "/"
       .. (RAID_DIFF_LABELS[GetActiveRaidDifficulty()] or "?") .. "]"
-      .. (MythicHandHoldingDB.testMode and " (Test Mode)" or ""))
+      .. (MythicHandHoldingDB.testMode and " (Test Mode)"
+          or MythicHandHoldingDB.sayMode and " (Say Mode)" or ""))
   elseif cmd == "test" then
     if InCombatLockdown() then
       Print("|cffff5555can't toggle Test Mode in combat|r - leave combat first.")
@@ -2227,6 +2308,18 @@ SlashCmdList["MYTHICHANDHOLDING"] = function(msg)
       _G["MythicHandHoldingPlainCheck"]:SetChecked(MythicHandHoldingDB.plainMode)
     end
     Print("Plain Text " .. (MythicHandHoldingDB.plainMode and "ON" or "OFF"))
+  elseif cmd == "say" then
+    if InCombatLockdown() then
+      Print("|cffff5555can't toggle Say Mode in combat|r - leave combat first.")
+    else
+      MythicHandHoldingDB.sayMode = not MythicHandHoldingDB.sayMode
+      if _G["MythicHandHoldingSayCheck"] then
+        _G["MythicHandHoldingSayCheck"]:SetChecked(MythicHandHoldingDB.sayMode)
+      end
+      RefreshAllMacros()
+      Print(MythicHandHoldingDB.sayMode and "Say Mode ON - tips go to /s (local say)"
+                                         or "Say Mode OFF - broadcasting to party/instance")
+    end
   elseif cmd == "mplus" then
     if ui and ui.ShowMode then ui.ShowMode("mplus", 1) end
     Print("content mode: Mythic+ dungeons")

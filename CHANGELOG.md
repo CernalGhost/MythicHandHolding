@@ -1,5 +1,19 @@
 # Mythic Hand Holding - Changelog
 
+## 1.1.0-alpha.5 (issue #4 — world bosses + say chat)
+
+- **Say Mode** — checkbox and `/mhh say` broadcast tips to local `/s` instead of
+  party/instance chat (closes #4).
+- World bosses (Lu'ashal, Cragpine, Thorm'belan, Predaxas) were added in alpha.2;
+  spell IDs for Thorm'belan and Predaxas verified in alpha.4.
+
+## 1.1.0-alpha.4
+
+- Thorm'belan and Predaxas world boss spell IDs from Adventure Guide.
+- Linkify uses separate M+ vs raid spell name lists (fewer false matches).
+- Fix `IsInInstance()` call when reading live raid difficulty.
+- Spread `RefreshAllMacros` across frames to avoid secure-update hitch.
+
 ## 1.1.0-alpha.2 (issue #2 — raids alpha)
 
 - **Verified encounter IDs** from Adventure Guide (Voidspire, Dreamrift, Quel'Danas, Sporefall, world bosses).
