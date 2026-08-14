@@ -3,7 +3,7 @@
 A World of Warcraft **retail** addon for **Midnight Season 2** Mythic+ and raids. One compact window, one click per party/raid chat callout — interrupts, boss mechanics, and tips.
 
 **Author:** CernalGhost  
-**Version:** 1.2.0-alpha.1  
+**Version:** 1.3.0  
 **Slash command:** `/mhh` or `/mythichandholding`  
 **Download:** [CurseForge](https://www.curseforge.com/wow/addons/mythic-hand-holding/preview) · [GitHub](https://github.com/CernalGhost/MythicHandHolding)
 

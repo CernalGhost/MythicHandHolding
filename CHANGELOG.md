@@ -1,5 +1,10 @@
 # Mythic Hand Holding - Changelog
 
+## 1.3.0
+
+- Version bump for Midnight Season 2 M+ pool plus raid mode (alpha) on one release line.
+- Includes Season 2 dungeon rotation (Patch 12.1) and raid callouts from the alpha branch.
+
 ## 1.2.0-alpha.1 (Midnight Season 2 M+ pool)
 
 - **Season 2 dungeon rotation:** replaced all 8 Season 1 dungeons with the Patch 12.1 pool:
