@@ -46,7 +46,14 @@ Clone or symlink the repo folder there, `/reload`, and use `/mhh ping` / `/mhh d
 
 ## Releases
 
-Maintainers tag versions matching `## Version:` in `MythicHandHolding.toc` (e.g. `v1.0.32`). Pushing a tag runs the GitHub Actions packager and creates a release zip.
+1. Bump `## Version:` in `MythicHandHolding.toc` and `local VERSION` in `MythicHandHolding.lua` (same value).
+2. Add a `CHANGELOG.md` section for that version.
+3. Merge to `main`. GitHub Actions reads the `.toc` and pushes tag `vX.Y.Z` if the version changed.
+4. Tag push runs the packager (`.github/workflows/release.yml`) → GitHub Release + CurseForge upload.
+
+Semver rules and AI agent checklist: `docs/SEMVER_AND_RELEASES_for_AI_AGENTS.md`.
+
+Manual tag (fallback only): `git tag -a v1.3.0 -m "Release v1.3.0"` then `git push origin v1.3.0`.
 
 ## License
 

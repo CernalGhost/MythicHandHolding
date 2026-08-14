@@ -1,0 +1,59 @@
+name: Tag release from TOC
+
+# When `## Version:` in the .toc changes on main, create matching git tag `vX.Y.Z`.
+# That tag triggers `.github/workflows/release.yml` (BigWigs packager + GitHub release).
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'MythicHandHolding.toc'
+
+permissions:
+  contents: write
+
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Read version from TOC
+        id: ver
+        run: |
+          VERSION=$(grep -m1 '^## Version:' MythicHandHolding.toc | sed 's/^## Version:[[:space:]]*//')
+          if [ -z "$VERSION" ]; then
+            echo "No ## Version: found in MythicHandHolding.toc" >&2
+            exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=v${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "TOC version: $VERSION"
+
+      - name: Skip if version unchanged
+        id: changed
+        run: |
+          CURRENT="${{ steps.ver.outputs.version }}"
+          PREV=$(git show HEAD~1:MythicHandHolding.toc 2>/dev/null \
+            | grep -m1 '^## Version:' | sed 's/^## Version:[[:space:]]*//' || true)
+          if [ "$CURRENT" = "$PREV" ]; then
+            echo "Version unchanged ($CURRENT); no tag needed."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Version changed: ${PREV:-<none>} -> $CURRENT"
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create and push tag
+        if: steps.changed.outputs.skip != 'true'
+        run: |
+          TAG="${{ steps.ver.outputs.tag }}"
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "Tag $TAG already exists; skipping."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "$TAG" -m "Release $TAG"
+          git push origin "$TAG"
