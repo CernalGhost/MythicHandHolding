@@ -46,14 +46,29 @@ Clone or symlink the repo folder there, `/reload`, and use `/mhh ping` / `/mhh d
 
 ## Releases
 
-1. Bump `## Version:` in `MythicHandHolding.toc` and `local VERSION` in `MythicHandHolding.lua` when you want a specific semver (especially MINOR/MAJOR).
-2. Add a `CHANGELOG.md` section for user-visible changes.
-3. Merge to `main`. GitHub Actions tags every merge (`vX.Y.Z`); if that tag already exists, CI auto-bumps PATCH first.
-4. Tag push runs the packager (`.github/workflows/release.yml`) → GitHub Release + CurseForge upload.
+The version is bumped **in the PR**, so `main` always matches what is on CurseForge.
 
-Semver rules and AI agent checklist: `docs/SEMVER_AND_RELEASES_for_AI_AGENTS.md`.
+1. Bump the version from the workspace root:
 
-Manual tag (fallback only): `git tag -a v1.3.0 -m "Release v1.3.0"` then `git push origin v1.3.0`.
+   ```powershell
+   .\bump-version.ps1 -Addon MythicHandHolding -Part patch -Note "What changed, in user terms."
+   ```
+
+   `-Part` is `patch`, `minor`, or `major`. This updates `MythicHandHolding.toc`,
+   both version strings in `MythicHandHolding.lua`, and `CHANGELOG.md` together.
+2. Give the PR a [Conventional Commit](https://www.conventionalcommits.org/) title
+   (`fix: …`, `feat: …`, `feat!: …`) — PRs are squash-merged, so the title lands on `main`.
+   CI rejects titles that do not match.
+3. Merge to `main`. `release-on-main.yml` tags the version from the `.toc` and dispatches the
+   packager, which creates the GitHub Release and uploads to CurseForge.
+
+`docs:`, `ci:`, `chore:`, `test:`, `style:` and `build:` PRs do not need a version bump. For an
+exception on any other type, add the `no-release` label.
+
+If the version on `main` is already tagged, the merge releases nothing — that is the intended
+"no release" path, not a failure.
+
+Semver rules and the AI agent checklist: `docs/SEMVER_AND_RELEASES_for_AI_AGENTS.md`.
 
 ## License
 
