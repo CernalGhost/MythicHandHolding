@@ -46,9 +46,9 @@ Clone or symlink the repo folder there, `/reload`, and use `/mhh ping` / `/mhh d
 
 ## Releases
 
-1. Bump `## Version:` in `MythicHandHolding.toc` and `local VERSION` in `MythicHandHolding.lua` (same value).
-2. Add a `CHANGELOG.md` section for that version.
-3. Merge to `main`. GitHub Actions reads the `.toc` and pushes tag `vX.Y.Z` if the version changed.
+1. Bump `## Version:` in `MythicHandHolding.toc` and `local VERSION` in `MythicHandHolding.lua` when you want a specific semver (especially MINOR/MAJOR).
+2. Add a `CHANGELOG.md` section for user-visible changes.
+3. Merge to `main`. GitHub Actions tags every merge (`vX.Y.Z`); if that tag already exists, CI auto-bumps PATCH first.
 4. Tag push runs the packager (`.github/workflows/release.yml`) → GitHub Release + CurseForge upload.
 
 Semver rules and AI agent checklist: `docs/SEMVER_AND_RELEASES_for_AI_AGENTS.md`.

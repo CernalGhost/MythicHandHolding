@@ -101,10 +101,10 @@ Add `CHANGELOG.md` under the **new** version heading in the same PR. Do not leav
 
 After merge to `main`:
 
-1. **Auto-tag** — `.github/workflows/tag-from-toc.yml` reads `## Version:` from `MythicHandHolding.toc`. If it changed vs the previous commit, pushes `vX.Y.Z`.
+1. **Auto-tag** — `.github/workflows/tag-from-toc.yml` runs on **every** push to `main`. Reads `## Version:` from `MythicHandHolding.toc`. If `vX.Y.Z` already exists, CI auto-bumps **PATCH**, syncs `.lua`, commits `[skip release]`, then tags.
 2. **Package** — `.github/workflows/release.yml` runs on tag push; BigWigs packager builds zip, creates GitHub Release, uploads to CurseForge when `CF_API_KEY` is set.
 
-**Maintainers:** bump version in the PR → merge → tag + release happen automatically. Manual `git tag` only if the workflow failed.
+**Maintainers:** bump `.toc` + `.lua` in the PR when you want a specific MINOR/MAJOR. Every merge to `main` releases — if you forget to bump, CI bumps PATCH so CurseForge still updates.
 
 **Do not** push tags from PR branches; only `main` should produce release tags.
 
