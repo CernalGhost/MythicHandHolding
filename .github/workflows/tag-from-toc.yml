@@ -1,8 +1,7 @@
 name: Tag release from TOC
 
 # Every merge to main: resolve version from .toc, push tag, package + CurseForge upload.
-# If vX.Y.Z already exists, auto-bumps PATCH on a local commit (tag only — main is protected).
-# Packager runs in this workflow because GITHUB_TOKEN tag pushes do not trigger other workflows.
+# If vX.Y.Z already exists, auto-bumps PATCH on a tag-only commit (main is protected).
 on:
   push:
     branches: [main]
@@ -11,9 +10,11 @@ permissions:
   contents: write
 
 jobs:
-  release:
+  tag:
     if: ${{ !contains(github.event.head_commit.message, '[skip release]') }}
     runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.ver.outputs.tag }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -70,8 +71,14 @@ jobs:
           git tag -a "$TAG" -m "Release $TAG"
           git push origin "$TAG"
 
-      - name: Checkout release tag
-        run: git checkout "${{ steps.ver.outputs.tag }}"
+  release:
+    needs: tag
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ needs.tag.outputs.tag }}
 
       - name: Package and release
         uses: BigWigsMods/packager@v2
