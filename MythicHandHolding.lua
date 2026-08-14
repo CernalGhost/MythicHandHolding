@@ -1,5 +1,5 @@
 --=====================================================================
---  MythicHandHolding  v1.3.0
+--  MythicHandHolding  v1.3.4
 --  Midnight Season 2 M+ dungeons; Midnight expansion raid callouts (raids alpha, issue #2).
 --  New in 1.0.6: chat hyperlinks for spells and bosses.
 --    * SPELL_IDS table: known spell name -> spell ID.
@@ -10,7 +10,7 @@
 --      new IDs can be copy/pasted into BOSS_IDS.
 --=====================================================================
 
-local VERSION  = "1.3.0"
+local VERSION  = "1.3.4"
 
 MythicHandHoldingDB = MythicHandHoldingDB or {}
 
