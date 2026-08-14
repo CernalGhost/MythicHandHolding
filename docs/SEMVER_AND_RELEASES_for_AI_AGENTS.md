@@ -10,10 +10,29 @@ Read this before bumping versions or opening PRs for **MythicHandHolding** (same
 |------|--------|
 | Release version | `## Version:` in `MythicHandHolding.toc` |
 | In-game `/mhh ping` version | `local VERSION` in `MythicHandHolding.lua` (must match `.toc`) |
-| User-facing notes | `CHANGELOG.md` top section for that version |
-| Git tag | `vX.Y.Z` (leading `v`, must match `.toc`) |
+| File header banner | `--  MythicHandHolding  vX.Y.Z` in `MythicHandHolding.lua` (must match `.toc`) |
+| User-facing notes | `CHANGELOG.md` section for that version |
+| Git tag | `vX.Y.Z` (leading `v`, created by CI from the `.toc`) |
 
-**Always bump all three** (`.toc`, `.lua` `VERSION`, `CHANGELOG.md`) in the same PR when the change is releasable.
+**The `.toc` version is bumped in the PR, never by CI.** That is what keeps `main` equal to
+what is published on CurseForge. Do not hand-edit the four places above — run the script.
+
+---
+
+## How to bump
+
+From the workspace root (`Z:\SourceCode\Projects\WowAddons`):
+
+```powershell
+.\bump-version.ps1 -Addon MythicHandHolding -Part patch -Note "Fix Murder Row boss tip typo."
+```
+
+`-Part` is `patch`, `minor`, or `major`. Use `-Version 1.4.0` to set an exact version,
+`-DryRun` to preview, and `-Note` more than once for multiple changelog bullets.
+
+The script updates the `.toc`, both version strings in the `.lua`, and inserts a
+`CHANGELOG.md` section. Running it with the current version (`-Version <current>`) re-syncs
+the copies without cutting a new release, which repairs drift.
 
 ---
 
@@ -84,51 +103,80 @@ Is the change user-visible on main after merge?
          └─ Yes → bump PATCH / MINOR / MAJOR (see above)
 ```
 
-### Tie to GitHub issues/PRs
+### PR titles are Conventional Commits
 
-| PR type | Typical bump |
-|---------|----------------|
-| `fix:` / bug report | PATCH |
-| `feat:` / feature request / new dungeon | MINOR |
-| Interface-only TOC for new WoW patch | PATCH |
-| Breaking refactor | MAJOR |
+PRs are squash-merged, so **the PR title becomes the commit message on `main`** and is what
+the changelog is written from. CI rejects a title that does not match:
 
-Add `CHANGELOG.md` under the **new** version heading in the same PR. Do not leave changes under `Unreleased` once version is bumped.
+```
+<type>[(scope)][!]: <description>
+```
+
+Allowed types: `feat` `fix` `perf` `refactor` `revert` `docs` `style` `test` `build` `ci` `chore`
+
+| PR title | Bump | Version required? |
+|----------|------|-------------------|
+| `fix: correct Murder Row tip` | PATCH | yes |
+| `feat: add Season 3 dungeon pool` | MINOR | yes |
+| `feat!: split raids into own addon` | MAJOR | yes |
+| `perf:` / `refactor:` / `revert:` | usually PATCH | yes |
+| `docs:` `ci:` `chore:` `test:` `style:` `build:` | none | no |
+
+Types that never reach a player's client do not need a version bump. For an exception on a
+shipping type, add the **`no-release`** label to the PR.
 
 ---
 
 ## Release automation
 
-After merge to `main`:
+Two workflows, plus the packager:
 
-1. **Auto-tag** — `.github/workflows/tag-from-toc.yml` runs on **every** push to `main`. Reads `## Version:` from `MythicHandHolding.toc`. If `vX.Y.Z` already exists, CI auto-bumps **PATCH** on a release-only commit and pushes the **tag** (not `main` — branch protection safe).
-2. **Package** — tag workflow dispatches `.github/workflows/release.yml` at the new tag ref (`workflow_dispatch`). BigWigs packager builds zip, creates GitHub Release, uploads to CurseForge when `CF_API_KEY` is set. (Tag pushes from `GITHUB_TOKEN` do not re-trigger workflows; inline packager on a `main` push skips with "Found future tag".)
+| Workflow | Trigger | Does |
+|----------|---------|------|
+| `pr-checks.yml` | PR opened/edited/pushed | Lints the PR title; verifies the version was bumped, that `.toc`/`.lua`/`CHANGELOG.md` agree, and that the version is not already released |
+| `release-on-main.yml` | push to `main` | Reads `## Version:` from the `.toc`. If `vX.Y.Z` is untagged, tags it and dispatches the packager. If it is already tagged, does nothing |
+| `release.yml` | tag push or dispatch | BigWigs packager builds the zip, creates the GitHub Release, uploads to CurseForge when `CF_API_KEY` is set |
 
-**Maintainers:** bump `.toc` + `.lua` in the PR when you want a specific MINOR/MAJOR. Every merge to `main` releases — if you forget to bump, CI bumps PATCH so CurseForge still updates.
+So a merge either releases exactly the version `main` declares, or releases nothing. There is
+no CI-side version bumping, which is what previously let `main` drift behind the published
+version.
 
-**Do not** push tags from PR branches; only `main` should produce release tags.
+Two GitHub Actions quirks are why the packager is dispatched instead of run inline:
+
+- A tag pushed with `GITHUB_TOKEN` does not trigger `release.yml`.
+- The BigWigs packager refuses to build on a branch push, logging `Found future tag ... not packaging`.
+
+**Do not** push tags by hand, and do not tag from a PR branch. Only `main` produces tags.
+Pre-release versions (anything with a `-alpha`/`-beta` suffix) are skipped by
+`release-on-main.yml`, so they never reach CurseForge.
 
 ---
 
 ## Agent checklist (every releasable PR)
 
 ```
-[ ] ## Version: bumped in MythicHandHolding.toc
-[ ] local VERSION matches .toc in MythicHandHolding.lua
-[ ] CHANGELOG.md has section for that version
+[ ] bump-version.ps1 run (bumps .toc, .lua VERSION, .lua header, CHANGELOG.md)
 [ ] Semver choice matches change size (PATCH/MINOR/MAJOR)
-[ ] deploy-wow-addons.ps1 run for local test (/reload)
+[ ] CHANGELOG.md section describes the change in user-facing terms
+[ ] PR title is a Conventional Commit and matches the bump size
+[ ] deploy-wow-addons.ps1 -WowRoot 'E:\World of Warcraft\_retail_' run for local test (/reload)
 [ ] PR description states the new version and bump rationale
 ```
+
+If `pr-checks.yml` fails, the error message names the fix — usually just re-running
+`bump-version.ps1`.
 
 ---
 
 ## Examples
 
-| Change | Bump |
-|--------|------|
-| Fix typo in Murder Row boss tip | `1.3.0` → `1.3.1` |
-| Add Altar of Fangs spell IDs only | `1.3.1` → `1.3.2` |
-| Season 3 dungeon pool swap | `1.3.x` → `1.4.0` |
-| Say Mode feature | `1.1.x` → `1.2.0` (minor) |
-| Split raids into separate addon | `1.x` → `2.0.0` |
+| Change | PR title | Bump |
+|--------|----------|------|
+| Fix typo in Murder Row boss tip | `fix: correct Murder Row boss tip` | `1.3.5` → `1.3.6` |
+| Add Altar of Fangs spell IDs only | `fix(dungeons): add Altar of Fangs spell IDs` | `1.3.6` → `1.3.7` |
+| `## Interface:` bump for a WoW patch | `fix: bump Interface for 12.2` | PATCH |
+| Season 3 dungeon pool swap | `feat: Season 3 M+ dungeon pool` | `1.3.x` → `1.4.0` |
+| New slash command or settings panel | `feat: add /mhh say mode` | MINOR |
+| Split raids into separate addon | `feat!: split raids into own addon` | `1.x` → `2.0.0` |
+| Update this document | `docs: clarify bump rules` | none |
+| Change a workflow | `ci: dispatch packager at tag` | none |
