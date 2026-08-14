@@ -1,6 +1,8 @@
 name: Tag release from TOC
 
-# Every merge to main: resolve version from .toc, push tag, package + CurseForge upload.
+# Every merge to main: resolve version from .toc, push tag, then dispatch the packager.
+# GITHUB_TOKEN tag pushes do not trigger release.yml; inline packager skips on main pushes
+# ("Found future tag"). workflow_dispatch with --ref <tag> avoids both issues.
 # If vX.Y.Z already exists, auto-bumps PATCH on a tag-only commit (main is protected).
 on:
   push:
@@ -8,13 +10,12 @@ on:
 
 permissions:
   contents: write
+  actions: write
 
 jobs:
   tag:
     if: ${{ !contains(github.event.head_commit.message, '[skip release]') }}
     runs-on: ubuntu-latest
-    outputs:
-      tag: ${{ steps.ver.outputs.tag }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -71,17 +72,11 @@ jobs:
           git tag -a "$TAG" -m "Release $TAG"
           git push origin "$TAG"
 
-  release:
-    needs: tag
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          ref: ${{ needs.tag.outputs.tag }}
-
-      - name: Package and release
-        uses: BigWigsMods/packager@v2
+      - name: Dispatch package and release
         env:
-          GITHUB_OAUTH: ${{ secrets.GITHUB_TOKEN }}
-          CF_API_KEY: ${{ secrets.CF_API_KEY }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          TAG="${{ steps.ver.outputs.tag }}"
+          gh workflow run "Package and release" --ref "$TAG"
+          echo "Dispatched Package and release for $TAG"
