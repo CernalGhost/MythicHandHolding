@@ -2,7 +2,7 @@ name: Tag release from TOC
 
 # Every merge to main gets a release tag (and CurseForge upload via release.yml).
 # Reads ## Version: from MythicHandHolding.toc. If vX.Y.Z already exists, auto-bumps PATCH
-# in .toc + MythicHandHolding.lua, commits [skip release], then tags the result.
+# in a local commit (not pushed to protected main), then pushes the tag only.
 on:
   push:
     branches: [main]
@@ -12,7 +12,6 @@ permissions:
 
 jobs:
   tag:
-    # Skip the bot's own version-bump commit (tag is pushed in the same job before this re-fires).
     if: ${{ !contains(github.event.head_commit.message, '[skip release]') }}
     runs-on: ubuntu-latest
     steps:
@@ -48,19 +47,19 @@ jobs:
           echo "bumped=$([ "$VERSION" != "$ORIG" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
           echo "Release version: $VERSION (from $ORIG)"
 
-      - name: Sync version into addon files
-        if: steps.ver.outputs.bumped == 'true'
+      - name: Prepare release commit
         run: |
           set -euo pipefail
           VERSION="${{ steps.ver.outputs.version }}"
-          sed -i "s/^## Version: .*/## Version: ${VERSION}/" MythicHandHolding.toc
-          sed -i "s/^local VERSION  = \".*\"/local VERSION  = \"${VERSION}\"/" MythicHandHolding.lua
-          sed -i "s/^--  MythicHandHolding  v.*/--  MythicHandHolding  v${VERSION}/" MythicHandHolding.lua
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add MythicHandHolding.toc MythicHandHolding.lua
-          git commit -m "chore(release): bump version to ${VERSION} [skip release]"
-          git push origin main
+          if [ "${{ steps.ver.outputs.bumped }}" = "true" ]; then
+            sed -i "s/^## Version: .*/## Version: ${VERSION}/" MythicHandHolding.toc
+            sed -i "s/^local VERSION  = \".*\"/local VERSION  = \"${VERSION}\"/" MythicHandHolding.lua
+            sed -i "s/^--  MythicHandHolding  v.*/--  MythicHandHolding  v${VERSION}/" MythicHandHolding.lua
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add MythicHandHolding.toc MythicHandHolding.lua
+            git commit -m "chore(release): bump version to ${VERSION} [skip release]"
+          fi
 
       - name: Create and push tag
         run: |
