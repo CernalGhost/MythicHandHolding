@@ -1,9 +1,9 @@
 # Mythic Hand Holding
 
-A World of Warcraft **retail** addon for **Midnight Season 1** Mythic+ and raids. One compact window, one click per party/raid chat callout — interrupts, boss mechanics, and tips.
+A World of Warcraft **retail** addon for **Midnight Season 2** Mythic+ and raids. One compact window, one click per party/raid chat callout — interrupts, boss mechanics, and tips.
 
 **Author:** CernalGhost  
-**Version:** 1.1.0-alpha.2  
+**Version:** 1.2.0-alpha.1  
 **Slash command:** `/mhh` or `/mythichandholding`  
 **Download:** [CurseForge](https://www.curseforge.com/wow/addons/mythic-hand-holding/preview) · [GitHub](https://github.com/CernalGhost/MythicHandHolding)
 
@@ -12,7 +12,7 @@ A World of Warcraft **retail** addon for **Midnight Season 1** Mythic+ and raids
 ## What it does
 
 - Movable panel (~224px wide) with **M+ / Raid** mode toggle and content dropdown.
-- **Mythic+:** eight Season 1 dungeons (Interrupts/Dispels, bosses, tips).
+- **Mythic+:** eight Season 2 dungeons (Altar of Fangs, Murder Row, Den of Nalorakk, The Blinding Vale, Voidscar Arena, King's Rest, Temple of Sethraliss, Ruby Life Pools).
 - **Raids (alpha):** Midnight S1 — The Voidspire (6), The Dreamrift (1), March on Quel'Danas (2), Sporefall / Rotmire (12.0.7).
 - **Raid difficulty:** LFR / Normal / Heroic / Mythic buttons; auto-detects in-raid; difficulty-only tips via `extraByDiff`.
 - Each click sends **one line** to party or instance/raid chat (secure macro — one line per click).

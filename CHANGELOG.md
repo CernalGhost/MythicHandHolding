@@ -1,5 +1,14 @@
 # Mythic Hand Holding - Changelog
 
+## 1.2.0-alpha.1 (Midnight Season 2 M+ pool)
+
+- **Season 2 dungeon rotation:** replaced all 8 Season 1 dungeons with the Patch 12.1 pool:
+  Altar of Fangs, Murder Row, Den of Nalorakk, The Blinding Vale, Voidscar Arena,
+  King's Rest, Temple of Sethraliss, Ruby Life Pools.
+- Tips sourced from Method M+ guides and Blizzard Season 2 dungeon references.
+- Legacy boss encounter IDs kept for KR / Sethraliss / RLP; run `/mhh ej` in new Midnight dungeons to verify IDs.
+- Removed Season 1-only spell ID tables (fill S2 IDs with `/mhh ej spells`).
+
 ## 1.1.0-alpha.5 (issue #4 — world bosses + say chat)
 
 - **Say Mode** — checkbox and `/mhh say` broadcast tips to local `/s` instead of
