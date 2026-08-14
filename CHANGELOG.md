@@ -45,7 +45,7 @@
 ## 1.1.0-alpha.1 (issue #2 — raids alpha)
 
 - **Raid mode (alpha):** M+ / Raid toggle in the window; auto-selects raids on zone-in.
-- **Midnight S1 raids:** The Voidspire (6 bosses), The Dreamrift (Chimaerus), March on Quel'Danas (Belo'ren, Midnight Falls).
+- **Midnight S2 raids:** The Voidspire (6 bosses), The Dreamrift (Chimaerus), March on Quel'Danas (Belo'ren, Midnight Falls).
 - **Data split:** `MythicHandHolding_Raids.lua` holds raid tips, boss encounter IDs, and future tier packs.
 - **New commands:** `/mhh mplus`, `/mhh raid` switch content mode.
 - Encounter/spell IDs are placeholders until verified with `/mhh ej`.

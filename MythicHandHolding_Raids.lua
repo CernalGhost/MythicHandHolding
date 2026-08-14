@@ -1,6 +1,6 @@
 --=====================================================================
 --  MythicHandHolding — Raid content (alpha, issue #2)
---  Midnight S1: Voidspire, Dreamrift, March on Quel'Danas, Sporefall (12.0.7).
+--  Midnight S2: Voidspire, Dreamrift, March on Quel'Danas, Sporefall (12.0.7).
 --
 --  Fill IDs from Adventure Guide (no need to be inside the raid):
 --    /mhh ej list              — list raid instances + EJ IDs
@@ -365,7 +365,7 @@ MHH_Raids = {
     {
       name = "The Voidspire",
       tab  = "VS",
-      tier = "Midnight S1",
+      tier = "Midnight S2",
       sections = {
         { label = "Interrupts/Dispels",
           title = "=== VOIDSPIRE - INT/DISP ===",
@@ -446,7 +446,7 @@ MHH_Raids = {
     {
       name = "The Dreamrift",
       tab  = "DR",
-      tier = "Midnight S1",
+      tier = "Midnight S2",
       sections = {
         { label = "Chimaerus",
           boss  = "Chimaerus the Undreamt God",
@@ -473,7 +473,7 @@ MHH_Raids = {
     {
       name = "March on Quel'Danas",
       tab  = "MQD",
-      tier = "Midnight S1",
+      tier = "Midnight S2",
       sections = {
         { label = "Interrupts/Dispels",
           title = "=== QUEL'DANAS - INT/DISP ===",
@@ -517,7 +517,7 @@ MHH_Raids = {
     {
       name = "Sporefall",
       tab  = "SF",
-      tier = "Midnight S1 (12.0.7)",
+      tier = "Midnight S2 (12.0.7)",
       sections = {
         { label = "Interrupts/Dispels",
           title = "=== SPOREFALL - INT/DISP ===",
@@ -565,7 +565,7 @@ MHH_Raids = {
     {
       name = "World Bosses",
       tab  = "WB",
-      tier = "Midnight S1 outdoor",
+      tier = "Midnight S2 outdoor",
       sections = {
         { label = "Lu'ashal",
           boss  = "Lu'ashal",
