@@ -70,6 +70,9 @@ jobs:
           git tag -a "$TAG" -m "Release $TAG"
           git push origin "$TAG"
 
+      - name: Checkout release tag
+        run: git checkout "${{ steps.ver.outputs.tag }}"
+
       - name: Package and release
         uses: BigWigsMods/packager@v2
         env:
