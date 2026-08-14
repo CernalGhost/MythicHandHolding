@@ -1,0 +1,105 @@
+name: PR checks
+
+on:
+  pull_request:
+    types: [opened, edited, reopened, synchronize, labeled, unlabeled]
+
+permissions:
+  contents: read
+
+env:
+  ADDON: MythicHandHolding
+
+jobs:
+  title:
+    name: Conventional PR title
+    runs-on: ubuntu-latest
+    steps:
+      # PRs are squash-merged, so the title becomes the commit message on main
+      # and is what the CHANGELOG is written from.
+      - name: Check title format
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          set -euo pipefail
+          pattern='^(feat|fix|perf|refactor|revert|docs|style|test|build|ci|chore)(\([a-z0-9._/-]+\))?!?: .+'
+          if printf '%s' "$PR_TITLE" | grep -Eq "$pattern"; then
+            echo "OK: $PR_TITLE"
+            exit 0
+          fi
+          echo "::error::PR title must be a Conventional Commit, e.g. 'fix: correct Murder Row tip' or 'feat(raids)!: ...'."
+          echo "Allowed types: feat fix perf refactor revert docs style test build ci chore"
+          echo "Got: ${PR_TITLE}"
+          exit 1
+
+  version:
+    name: Version bump
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify version bump and consistency
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+          SKIP_RELEASE: ${{ contains(github.event.pull_request.labels.*.name, 'no-release') }}
+        run: |
+          set -euo pipefail
+
+          fail=0
+          note() { echo "::error::$1"; fail=1; }
+          toc_version() { grep -m1 '^## Version:' | sed 's/^## Version:[[:space:]]*//' | tr -d '\r'; }
+
+          HEAD_VER="$(toc_version < "${ADDON}.toc")"
+          git fetch --quiet origin "$BASE_REF"
+          BASE_VER="$(git show "FETCH_HEAD:${ADDON}.toc" | toc_version)"
+
+          echo "${BASE_REF}: ${BASE_VER}"
+          echo "this PR:    ${HEAD_VER}"
+
+          # The .lua copies of the version must track the .toc regardless of bump.
+          LUA_VER="$(grep -m1 '^local VERSION' "${ADDON}.lua" | sed 's/.*"\([^"]*\)".*/\1/' | tr -d '\r')"
+          if [ "$LUA_VER" != "$HEAD_VER" ]; then
+            note "local VERSION in ${ADDON}.lua is ${LUA_VER} but ${ADDON}.toc says ${HEAD_VER}. Run bump-version.ps1."
+          fi
+
+          HDR_VER="$(sed -nE "s/^--[[:space:]]+${ADDON}[[:space:]]+v([0-9]+\.[0-9]+\.[0-9]+).*/\1/p" "${ADDON}.lua" | head -1)"
+          if [ -n "$HDR_VER" ] && [ "$HDR_VER" != "$HEAD_VER" ]; then
+            note "${ADDON}.lua header says v${HDR_VER} but ${ADDON}.toc says ${HEAD_VER}. Run bump-version.ps1."
+          fi
+
+          # Types that never reach a user's game client do not need a release.
+          TYPE="$(printf '%s' "$PR_TITLE" | sed -n 's/^\([a-z][a-z]*\).*/\1/p')"
+          case "$TYPE" in
+            docs|style|test|ci|chore|build) requires_bump=false ;;
+            *)                              requires_bump=true  ;;
+          esac
+          [ "$SKIP_RELEASE" = "true" ] && requires_bump=false
+
+          if [ "$HEAD_VER" = "$BASE_VER" ]; then
+            if [ "$requires_bump" = "true" ]; then
+              note "A '${TYPE}:' change ships to users, so bump the version: bump-version.ps1 -Addon ${ADDON} -Part patch|minor|major. Add the 'no-release' label to override."
+            else
+              echo "::notice::No version change, and '${TYPE}:' does not require one."
+            fi
+          else
+            newest="$(printf '%s\n%s\n' "$BASE_VER" "$HEAD_VER" | sort -V | tail -1)"
+            if [ "$newest" != "$HEAD_VER" ]; then
+              note "Version moved backwards: ${BASE_VER} -> ${HEAD_VER}."
+            fi
+
+            esc="$(printf '%s' "$HEAD_VER" | sed 's/\./\\./g')"
+            if ! grep -Eq "^##[[:space:]]+${esc}([[:space:]]|$)" CHANGELOG.md; then
+              note "CHANGELOG.md has no '## ${HEAD_VER}' section."
+            fi
+
+            # 'no-release' also covers re-syncing the .toc to an already-published
+            # version, where reusing the existing tag is the intent.
+            if [ "$SKIP_RELEASE" != "true" ] && git ls-remote --exit-code --tags origin "refs/tags/v${HEAD_VER}" >/dev/null 2>&1; then
+              note "v${HEAD_VER} is already released. Choose a higher version, or add the 'no-release' label if this is a version sync."
+            fi
+          fi
+
+          exit $fail

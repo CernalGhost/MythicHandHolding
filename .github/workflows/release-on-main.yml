@@ -1,0 +1,63 @@
+name: Release on main
+
+# "## Version:" in the .toc is the release version, and it is bumped in the PR
+# (see bump-version.ps1), so main always matches what was published.
+#
+# This job only tags. If the version on main is already tagged it does nothing,
+# which makes re-runs and non-releasable merges harmless.
+#
+# The packager is dispatched rather than run here because of two Actions quirks:
+#   - a tag pushed with GITHUB_TOKEN does not trigger release.yml
+#   - the BigWigs packager refuses to build on a branch push ("Found future tag")
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+env:
+  ADDON: MythicHandHolding
+
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Tag version and dispatch packager
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          VERSION="$(grep -m1 '^## Version:' "${ADDON}.toc" | sed 's/^## Version:[[:space:]]*//' | tr -d '\r')"
+          if [ -z "$VERSION" ]; then
+            echo "::error::No '## Version:' line in ${ADDON}.toc"
+            exit 1
+          fi
+          TAG="v${VERSION}"
+
+          case "$VERSION" in
+            *-*)
+              echo "::notice::${VERSION} is a pre-release; main publishes stable versions only."
+              exit 0
+              ;;
+          esac
+
+          if git rev-parse -q --verify "refs/tags/${TAG}" >/dev/null; then
+            echo "::notice::${TAG} is already released. Bump ## Version: in a PR to ship again."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "$TAG" -m "Release $TAG"
+          git push origin "$TAG"
+
+          gh workflow run "Package and release" --ref "$TAG"
+          echo "::notice::Tagged ${TAG} and dispatched the packager."
