@@ -2,7 +2,7 @@
 ## Title: Mythic Hand Holding
 ## Notes: One-click party-chat callouts for Mythic+ bosses, interrupts, and tips.
 ## Author: CernalGhost
-## Version: 1.3.0
+## Version: 1.3.2
 ## SavedVariables: MythicHandHoldingDB
 ## IconTexture: 134400
 ## Category-enUS: PvE
