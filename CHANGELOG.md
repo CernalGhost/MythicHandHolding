@@ -1,5 +1,55 @@
 # Mythic Hand Holding - Changelog
 
+## 1.3.0
+
+- Version bump for Midnight Season 2 M+ pool plus raid mode (alpha) on one release line.
+- Includes Season 2 dungeon rotation (Patch 12.1) and raid callouts from the alpha branch.
+
+## 1.2.0-alpha.1 (Midnight Season 2 M+ pool)
+
+- **Season 2 dungeon rotation:** replaced all 8 Season 1 dungeons with the Patch 12.1 pool:
+  Altar of Fangs, Murder Row, Den of Nalorakk, The Blinding Vale, Voidscar Arena,
+  King's Rest, Temple of Sethraliss, Ruby Life Pools.
+- Tips sourced from Method M+ guides and Blizzard Season 2 dungeon references.
+- Legacy boss encounter IDs kept for KR / Sethraliss / RLP; run `/mhh ej` in new Midnight dungeons to verify IDs.
+- Removed Season 1-only spell ID tables (fill S2 IDs with `/mhh ej spells`).
+
+## 1.1.0-alpha.5 (issue #4 — world bosses + say chat)
+
+- **Say Mode** — checkbox and `/mhh say` broadcast tips to local `/s` instead of
+  party/instance chat (closes #4).
+- World bosses (Lu'ashal, Cragpine, Thorm'belan, Predaxas) were added in alpha.2;
+  spell IDs for Thorm'belan and Predaxas verified in alpha.4.
+
+## 1.1.0-alpha.4
+
+- Thorm'belan and Predaxas world boss spell IDs from Adventure Guide.
+- Linkify uses separate M+ vs raid spell name lists (fewer false matches).
+- Fix `IsInInstance()` call when reading live raid difficulty.
+- Spread `RefreshAllMacros` across frames to avoid secure-update hitch.
+
+## 1.1.0-alpha.2 (issue #2 — raids alpha)
+
+- **Verified encounter IDs** from Adventure Guide (Voidspire, Dreamrift, Quel'Danas, Sporefall, world bosses).
+- **Sporefall** (patch 12.0.7): Rotmire single-boss raid with Normal/Heroic/Mythic tip variants.
+- **World Bosses** entry (Lu'ashal, Cragpine, Thorm'belan, Predaxas) from EJ "Midnight".
+- `/mhh ej queldanas` (and similar shortcuts) resolve March on Quel'Danas.
+- **Raid difficulty UI:** LFR / N / H / M buttons; auto-detects when you zone into a raid.
+- **Difficulty-specific tips:** `extraByDiff` lines append for the active difficulty; journal links use it too.
+- **Adventure Guide dumps (no need to be inside the raid):**
+  - `/mhh ej list` — list raid instances
+  - `/mhh ej <name|id>` — boss encounter IDs
+  - `/mhh ej spells <boss|id>` — ability spell IDs
+  - `/mhh ej diff` / `/mhh diff` — set journal difficulty for dumps and callouts
+
+## 1.1.0-alpha.1 (issue #2 — raids alpha)
+
+- **Raid mode (alpha):** M+ / Raid toggle in the window; auto-selects raids on zone-in.
+- **Midnight S1 raids:** The Voidspire (6 bosses), The Dreamrift (Chimaerus), March on Quel'Danas (Belo'ren, Midnight Falls).
+- **Data split:** `MythicHandHolding_Raids.lua` holds raid tips, boss encounter IDs, and future tier packs.
+- **New commands:** `/mhh mplus`, `/mhh raid` switch content mode.
+- Encounter/spell IDs are placeholders until verified with `/mhh ej`.
+
 ## 1.0.36
 
 - Set `X-Curse-Project-ID` so GitHub Actions can upload releases to CurseForge.
