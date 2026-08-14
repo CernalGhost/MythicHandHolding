@@ -56,6 +56,11 @@ The version is bumped **in the PR**, so `main` always matches what is on CurseFo
 
    `-Part` is `patch`, `minor`, or `major`. This updates `MythicHandHolding.toc`,
    both version strings in `MythicHandHolding.lua`, and `CHANGELOG.md` together.
+
+   Without that script, edit the same four places by hand — `## Version:` in
+   `MythicHandHolding.toc`, `local VERSION` and the `--  MythicHandHolding  vX.Y.Z`
+   header in `MythicHandHolding.lua`, and a new `CHANGELOG.md` section. CI checks all four
+   agree and names any that do not.
 2. Give the PR a [Conventional Commit](https://www.conventionalcommits.org/) title
    (`fix: …`, `feat: …`, `feat!: …`) — PRs are squash-merged, so the title lands on `main`.
    CI rejects titles that do not match.
