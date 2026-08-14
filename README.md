@@ -1,6 +1,6 @@
 # Mythic Hand Holding
 
-A World of Warcraft **retail** addon for **Midnight Season 2** Mythic+ and raids. One compact window, one click per party/raid chat callout — interrupts, boss mechanics, and tips.
+A World of Warcraft **retail** addon for **Midnight Season 2 Mythic+** and **Midnight expansion raids**. One compact window, one click per party/raid chat callout — interrupts, boss mechanics, and tips.
 
 **Author:** CernalGhost  
 **Version:** 1.3.0  
@@ -13,7 +13,7 @@ A World of Warcraft **retail** addon for **Midnight Season 2** Mythic+ and raids
 
 - Movable panel (~224px wide) with **M+ / Raid** mode toggle and content dropdown.
 - **Mythic+:** eight Season 2 dungeons (Altar of Fangs, Murder Row, Den of Nalorakk, The Blinding Vale, Voidscar Arena, King's Rest, Temple of Sethraliss, Ruby Life Pools).
-- **Raids (alpha):** Midnight S2 — The Voidspire (6), The Dreamrift (1), March on Quel'Danas (2), Sporefall / Rotmire (12.0.7).
+- **Raids (alpha):** Midnight expansion — The Voidspire (6), The Dreamrift (1), March on Quel'Danas (2), Sporefall / Rotmire (12.0.7).
 - **Raid difficulty:** LFR / Normal / Heroic / Mythic buttons; auto-detects in-raid; difficulty-only tips via `extraByDiff`.
 - Each click sends **one line** to party or instance/raid chat (secure macro — one line per click).
 - Multi-line sections **cycle** on repeated clicks; badge shows `0/N` … `N/N`.

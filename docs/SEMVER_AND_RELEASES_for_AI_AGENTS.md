@@ -38,7 +38,7 @@ Use when adding capability users will notice:
 
 - New dungeon tab(s) or raid boss sections
 - New slash commands, settings, or content modes
-- Seasonal M+ pool swap (S1 → S2 dungeons)
+- Seasonal M+ pool swap only (S1 → S2 dungeons); raids are expansion-scoped, not seasonal
 
 Reset patch to `0` on minor bump.
 
@@ -68,7 +68,7 @@ On long-lived branches (`alpha/*`, `feature/*`) before merge to `main`:
 
 **On merge to `main`:** drop the suffix and use the next **stable** semver (usually MINOR if the branch added features, PATCH if it only fixed bugs).
 
-**Example:** `1.2.0-alpha.1` on branch → merge as **`1.3.0`** when shipping S2 dungeons + raids together.
+**Example:** `1.2.0-alpha.1` on branch → merge as **`1.3.0`** when shipping S2 M+ pool plus expansion raid content together.
 
 Do **not** tag `-alpha` or `-beta` versions for CurseForge/GitHub release; tags are stable only.
 

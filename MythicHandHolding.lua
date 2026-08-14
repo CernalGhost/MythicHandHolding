@@ -1,6 +1,6 @@
 --=====================================================================
 --  MythicHandHolding  v1.3.0
---  Midnight Season 2 M+ dungeons and raid callouts (raids alpha, issue #2).
+--  Midnight Season 2 M+ dungeons; Midnight expansion raid callouts (raids alpha, issue #2).
 --  New in 1.0.6: chat hyperlinks for spells and bosses.
 --    * SPELL_IDS table: known spell name -> spell ID.
 --    * BOSS_IDS table:  known boss name  -> encounter ID.

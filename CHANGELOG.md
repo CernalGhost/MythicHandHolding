@@ -2,8 +2,8 @@
 
 ## 1.3.0
 
-- Version bump for Midnight Season 2 M+ pool plus raid mode (alpha) on one release line.
-- Includes Season 2 dungeon rotation (Patch 12.1) and raid callouts from the alpha branch.
+- Version bump for Midnight Season 2 M+ pool plus Midnight expansion raid mode (alpha) on one release line.
+- Includes Season 2 dungeon rotation (Patch 12.1) and expansion raid callouts from the alpha branch.
 
 ## 1.2.0-alpha.1 (Midnight Season 2 M+ pool)
 
@@ -45,7 +45,7 @@
 ## 1.1.0-alpha.1 (issue #2 — raids alpha)
 
 - **Raid mode (alpha):** M+ / Raid toggle in the window; auto-selects raids on zone-in.
-- **Midnight S2 raids:** The Voidspire (6 bosses), The Dreamrift (Chimaerus), March on Quel'Danas (Belo'ren, Midnight Falls).
+- **Midnight expansion raids:** The Voidspire (6 bosses), The Dreamrift (Chimaerus), March on Quel'Danas (Belo'ren, Midnight Falls).
 - **Data split:** `MythicHandHolding_Raids.lua` holds raid tips, boss encounter IDs, and future tier packs.
 - **New commands:** `/mhh mplus`, `/mhh raid` switch content mode.
 - Encounter/spell IDs are placeholders until verified with `/mhh ej`.
