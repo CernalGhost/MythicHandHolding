@@ -1,58 +1,71 @@
 name: Tag release from TOC
 
-# When `## Version:` in the .toc changes on main, create matching git tag `vX.Y.Z`.
-# That tag triggers `.github/workflows/release.yml` (BigWigs packager + GitHub release).
+# Every merge to main gets a release tag (and CurseForge upload via release.yml).
+# Reads ## Version: from MythicHandHolding.toc. If vX.Y.Z already exists, auto-bumps PATCH
+# in .toc + MythicHandHolding.lua, commits [skip release], then tags the result.
 on:
   push:
     branches: [main]
-    paths:
-      - 'MythicHandHolding.toc'
 
 permissions:
   contents: write
 
 jobs:
   tag:
+    # Skip the bot's own version-bump commit (tag is pushed in the same job before this re-fires).
+    if: ${{ !contains(github.event.head_commit.message, '[skip release]') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Read version from TOC
+      - name: Resolve releasable version
         id: ver
         run: |
-          VERSION=$(grep -m1 '^## Version:' MythicHandHolding.toc | sed 's/^## Version:[[:space:]]*//')
+          set -euo pipefail
+          read_toc_version() {
+            grep -m1 '^## Version:' MythicHandHolding.toc | sed 's/^## Version:[[:space:]]*//'
+          }
+          bump_patch() {
+            local v="$1" major minor patch
+            IFS='.' read -r major minor patch <<< "$v"
+            patch=$((patch + 1))
+            echo "${major}.${minor}.${patch}"
+          }
+          VERSION="$(read_toc_version)"
           if [ -z "$VERSION" ]; then
-            echo "No ## Version: found in MythicHandHolding.toc" >&2
+            echo "No ## Version: in MythicHandHolding.toc" >&2
             exit 1
           fi
+          ORIG="$VERSION"
+          while git rev-parse "v${VERSION}" >/dev/null 2>&1; do
+            echo "Tag v${VERSION} exists; bumping patch."
+            VERSION="$(bump_patch "$VERSION")"
+          done
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "tag=v${VERSION}" >> "$GITHUB_OUTPUT"
-          echo "TOC version: $VERSION"
+          echo "bumped=$([ "$VERSION" != "$ORIG" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+          echo "Release version: $VERSION (from $ORIG)"
 
-      - name: Skip if version unchanged
-        id: changed
+      - name: Sync version into addon files
+        if: steps.ver.outputs.bumped == 'true'
         run: |
-          CURRENT="${{ steps.ver.outputs.version }}"
-          PREV=$(git show HEAD~1:MythicHandHolding.toc 2>/dev/null \
-            | grep -m1 '^## Version:' | sed 's/^## Version:[[:space:]]*//' || true)
-          if [ "$CURRENT" = "$PREV" ]; then
-            echo "Version unchanged ($CURRENT); no tag needed."
-            echo "skip=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "Version changed: ${PREV:-<none>} -> $CURRENT"
-            echo "skip=false" >> "$GITHUB_OUTPUT"
-          fi
+          set -euo pipefail
+          VERSION="${{ steps.ver.outputs.version }}"
+          sed -i "s/^## Version: .*/## Version: ${VERSION}/" MythicHandHolding.toc
+          sed -i "s/^local VERSION  = \".*\"/local VERSION  = \"${VERSION}\"/" MythicHandHolding.lua
+          sed -i "s/^--  MythicHandHolding  v.*/--  MythicHandHolding  v${VERSION}/" MythicHandHolding.lua
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add MythicHandHolding.toc MythicHandHolding.lua
+          git commit -m "chore(release): bump version to ${VERSION} [skip release]"
+          git push origin main
 
       - name: Create and push tag
-        if: steps.changed.outputs.skip != 'true'
         run: |
+          set -euo pipefail
           TAG="${{ steps.ver.outputs.tag }}"
-          if git rev-parse "$TAG" >/dev/null 2>&1; then
-            echo "Tag $TAG already exists; skipping."
-            exit 0
-          fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git tag -a "$TAG" -m "Release $TAG"
