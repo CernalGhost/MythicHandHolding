@@ -1,8 +1,8 @@
 name: Tag release from TOC
 
-# Every merge to main gets a release tag (and CurseForge upload via release.yml).
-# Reads ## Version: from MythicHandHolding.toc. If vX.Y.Z already exists, auto-bumps PATCH
-# in a local commit (not pushed to protected main), then pushes the tag only.
+# Every merge to main: resolve version from .toc, push tag, package + CurseForge upload.
+# If vX.Y.Z already exists, auto-bumps PATCH on a local commit (tag only — main is protected).
+# Packager runs in this workflow because GITHUB_TOKEN tag pushes do not trigger other workflows.
 on:
   push:
     branches: [main]
@@ -11,7 +11,7 @@ permissions:
   contents: write
 
 jobs:
-  tag:
+  release:
     if: ${{ !contains(github.event.head_commit.message, '[skip release]') }}
     runs-on: ubuntu-latest
     steps:
@@ -69,3 +69,9 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git tag -a "$TAG" -m "Release $TAG"
           git push origin "$TAG"
+
+      - name: Package and release
+        uses: BigWigsMods/packager@v2
+        env:
+          GITHUB_OAUTH: ${{ secrets.GITHUB_TOKEN }}
+          CF_API_KEY: ${{ secrets.CF_API_KEY }}
