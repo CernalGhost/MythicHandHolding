@@ -17,8 +17,9 @@
 
 ## Checklist
 
-- [ ] `CHANGELOG.md` updated (if user-visible)
+- [ ] `CHANGELOG.md` has a section for the version being merged
 - [ ] Version bumped in `MythicHandHolding.toc` **and** `local VERSION` in `MythicHandHolding.lua` (must match)
+- [ ] `**Version:**` in `README.md` matches the `.toc`
 - [ ] Semver choice documented in PR (see `docs/SEMVER_AND_RELEASES_for_AI_AGENTS.md`)
 - [ ] Chat still uses secure action buttons (no `SendChatMessage` in M+)
 

@@ -11,11 +11,15 @@ Read this before bumping versions or opening PRs for **MythicHandHolding** (same
 | Release version | `## Version:` in `MythicHandHolding.toc` |
 | In-game `/mhh ping` version | `local VERSION` in `MythicHandHolding.lua` (must match `.toc`) |
 | File header banner | `--  MythicHandHolding  vX.Y.Z` in `MythicHandHolding.lua` (must match `.toc`) |
+| Repo front page | `**Version:**` in `README.md` (must match `.toc`) |
 | User-facing notes | `CHANGELOG.md` section for that version |
 | Git tag | `vX.Y.Z` (leading `v`, created by CI from the `.toc`) |
 
 **The `.toc` version is bumped in the PR, never by CI.** That is what keeps `main` equal to
-what is published on CurseForge. Do not hand-edit the four places above — run the script.
+what is published on CurseForge. Do not hand-edit the five places above — run the script.
+
+The **Version bump** PR check fails the PR if the `.lua`, the README or the `CHANGELOG.md`
+disagree with the `.toc`, so nothing reaches `main` half-bumped.
 
 ---
 

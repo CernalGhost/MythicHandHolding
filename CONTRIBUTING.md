@@ -29,6 +29,22 @@ Use the [feature request template](https://github.com/CernalGhost/MythicHandHold
 4. Update `CHANGELOG.md` under an `## Unreleased` section (or the next version if you are bumping the `.toc`).
 5. Open a PR against `main` and fill out the pull request template.
 
+### Anything that reaches `main` must carry its version and changelog
+
+`main` is what gets tagged and published, so it is never allowed to disagree with itself.
+Every merge to `main` must leave these in sync:
+
+- `## Version:` in `MythicHandHolding.toc` — the release version, bumped in the PR, never by CI
+- `local VERSION` and the `--  MythicHandHolding  vX.Y.Z` header in `MythicHandHolding.lua`
+- `**Version:**` in `README.md`
+- a `## X.Y.Z` section in `CHANGELOG.md` describing the change
+
+Run `bump-version.ps1` rather than editing the four files by hand; it writes all of them.
+The **Version bump** PR check enforces this and will fail the PR on any mismatch. Changes
+that never reach a user's client (`docs:`, `style:`, `test:`, `ci:`, `chore:`, `build:`) do
+not need a new version, but the README must still match the current `.toc`. To merge a
+user-facing change without cutting a release, add the `no-release` label.
+
 ### WoW addon constraints
 
 - Party/instance chat must stay on **secure action buttons** (user-initiated clicks). Do not replace with `SendChatMessage` from addon code in Mythic+.
