@@ -70,6 +70,15 @@ jobs:
             note "${ADDON}.lua header says v${HDR_VER} but ${ADDON}.toc says ${HEAD_VER}. Run bump-version.ps1."
           fi
 
+          # The README is the shop window for the repo, so a stale version there is
+          # the drift users notice first. Checked on every PR, not just bumps.
+          RDM_VER="$(sed -nE 's/^\*\*Version:\*\*[[:space:]]*([0-9]+\.[0-9]+\.[0-9]+[^[:space:]]*).*/\1/p' README.md | head -1)"
+          if [ -z "$RDM_VER" ]; then
+            note "README.md has no '**Version:** X.Y.Z' line."
+          elif [ "$RDM_VER" != "$HEAD_VER" ]; then
+            note "README.md says ${RDM_VER} but ${ADDON}.toc says ${HEAD_VER}. Run bump-version.ps1."
+          fi
+
           # Types that never reach a user's game client do not need a release.
           TYPE="$(printf '%s' "$PR_TITLE" | sed -n 's/^\([a-z][a-z]*\).*/\1/p')"
           case "$TYPE" in
