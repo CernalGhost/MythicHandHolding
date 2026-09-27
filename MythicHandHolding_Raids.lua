@@ -1,6 +1,7 @@
 --=====================================================================
 --  MythicHandHolding — Raid content (alpha, issue #2)
---  Midnight expansion: Voidspire, Dreamrift, March on Quel'Danas, Sporefall (12.0.7).
+--  Midnight Season 2 (12.1): The Venomous Abyss, The Tidebound Grotto.
+--  Midnight Season 1: Voidspire, Dreamrift, March on Quel'Danas, Sporefall (12.0.7).
 --
 --  Fill IDs from Adventure Guide (no need to be inside the raid):
 --    /mhh ej list              — list raid instances + EJ IDs
@@ -20,6 +21,21 @@ MHH_Raids = {
   -- EJ instance IDs: Voidspire 1307, Dreamrift 1314, Quel'Danas 1308,
   -- Sporefall 1305, Midnight world bosses 1312.
   bossIds = {
+    -- Season 2 (12.1): The Venomous Abyss (EJ instance 1320)
+    ["Nek'zali the Soulcoiler"]       = 2888,
+    ["Nek'zali"]                       = 2888,
+    ["Entombed Sentinels"]            = 2874,
+    ["The Lost Explorers"]            = 2894,
+    ["Vashnik the Malignant"]         = 2882,
+    ["Vashnik"]                        = 2882,
+    ["Sszorak"]                        = 2871,
+    ["The Twin Fangs"]                = 2887,
+    ["The Coiled Altar"]              = 2883,
+    ["Ula'tek"]                        = 2895,
+    -- Season 2 (12.1): The Tidebound Grotto lair (EJ instance 1317)
+    ["Nymrissa Wavecaller"]           = 2849,
+    ["Nymrissa"]                       = 2849,
+    -- Season 1
     ["Imperator Averzian"]            = 2733,
     ["Vorasius"]                       = 2734,
     ["Fallen-King Salhadaar"]          = 2736,
@@ -46,6 +62,8 @@ MHH_Raids = {
 
   -- Optional: pin EJ instance IDs for /mhh ej name matching.
   instanceIds = {
+    ["The Venomous Abyss"]    = 1320,
+    ["The Tidebound Grotto"]  = 1317,
     ["The Voidspire"]         = 1307,
     ["The Dreamrift"]         = 1314,
     ["March on Quel'Danas"]   = 1308,
@@ -352,6 +370,85 @@ MHH_Raids = {
     ["Seismic Slam"] = 1276320,
     ["Toxin Splatter"] = 1276988,
     ["Voidscatter"] = 1276884,
+
+    -- ============ Season 2 (12.1) ============
+    -- Nek'zali the Soulcoiler
+    ["Cremation"] = 1289875,
+    ["Essence Rend"] = 1287426,
+    ["Hungering Pyre"] = 1289855,
+    ["Possession Barrage"] = 1284103,
+    ["Restless Amani"] = 1289919,
+    ["Soulcoil Well"] = 1285623,
+    -- Entombed Sentinels
+    ["Blighted Blood"] = 1284471,
+    ["Helical Toxins"] = 1284590,
+    ["Mark of Acid"] = 1284494,
+    ["Mark of Blood"] = 1284503,
+    ["Toxic Droplets"] = 1284434,
+    ["Ula'tek's Dominance"] = 1290193,
+    ["Unstable Miasma"] = 1288232,
+    ["Venom Coagulation"] = 1284251,
+    ["Vitriolic Stasis"] = 1284588,
+    -- The Lost Explorers
+    ["Blink Nova"] = 1296025,
+    ["Final Ascension"] = 1292779,
+    ["Shell Spin"] = 1296061,
+    ["Throw Junk"] = 1291933,
+    -- Vashnik the Malignant
+    ["Exploding Infection"] = 1295173,
+    ["Imbibe"] = 1283164,
+    ["Malignant Catalyst"] = 1282525,
+    ["Plague Froth"] = 1281907,
+    ["Siphon Blood"] = 1295229,
+    ["Stygian Infection"] = 1294994,
+    -- Sszorak
+    ["Apex Predator"] = 1277025,
+    ["Dig In"] = 1286033,
+    ["Howling Maelstrom"] = 1285732,
+    ["Mutilate"] = 1277027,
+    ["Raging Crosswinds"] = 1285419,
+    ["Ravage"] = 1277002,
+    ["Tempest"] = 1287072,
+    ["Venomous Surge"] = 1305959,
+    -- The Twin Fangs
+    ["Caustic Globule"] = 1289993,
+    ["Coiling Ichor"] = 1290809,
+    ["Eternal Venom"] = 1290336,
+    ["Ravenous Feast"] = 1290516,
+    ["Stir the Depths"] = 1290956,
+    ["Stone Breaker"] = 1288538,
+    ["Submerge"] = 1308556,
+    ["Venomous Emergence"] = 1291404,
+    -- The Coiled Altar
+    ["Axegrinder"] = 1301111,
+    ["Coalesced Venom"] = 1282403,
+    ["Dreadmarch"] = 1285643,
+    ["Eternal Nightfall"] = 1286918,
+    ["Ghastly Regeneration"] = 1304033,
+    ["Gloombomb"] = 1310882,
+    ["Guillotine"] = 1283489,
+    ["Sever"] = 1299680,
+    ["Soul Sever"] = 1286620,
+    ["Soulbound"] = 1309987,
+    ["Spiritcackle"] = 1286441,
+    -- Ula'tek
+    ["Anguished Cry"] = 1305650,
+    ["Call of the Serpent"] = 1304012,
+    ["Caustic Waves"] = 1292403,
+    ["Circling Prey"] = 1301510,
+    ["Doomscale Cauldron"] = 1313355,
+    ["Petrifying Sting"] = 1303414,
+    ["Poisonous Bite"] = 1287036,
+    ["Rage of the Shackled"] = 1286860,
+    ["Serpent's Bite"] = 1295905,
+    ["Soul Constrictor"] = 1300685,
+    ["Spectral Coils"] = 1287265,
+    ["Volatile Purge"] = 1306086,
+    -- Nymrissa Wavecaller (Tidebound Grotto)
+    ["Chilling Frost"] = 1313393,
+    ["Frost Orb"] = 1313402,
+    ["Swirling Whirlpools"] = 1258668,
+    ["Water Jet"] = 1258901,
   },
 
   -- Optional per-difficulty spell overrides (merged on top when that diff is active).
@@ -359,6 +456,197 @@ MHH_Raids = {
   },
 
   raids = {
+    ------------------------------------------------------------------
+    -- The Venomous Abyss (8 bosses, patch 12.1 / Season 2)
+    -- Boss 1, then two wings of two, then bosses 6-8 from the central pit.
+    ------------------------------------------------------------------
+    {
+      name = "The Venomous Abyss",
+      tab  = "TVA",
+      tier = "Midnight S2 (12.1)",
+      sections = {
+        { label = "Interrupts/Dispels",
+          title = "=== VENOMOUS ABYSS - INT/DISP ===",
+          lines = {
+            "INTERRUPT: Anguished Cry (Weakened Doomscale, Ula'tek P2), Spiritcackle adds (Coiled Altar Heroic)",
+            "DISPEL: Essence Rend (Nek'zali — target moves to the wall FIRST, dispel drops a puddle)",
+            "DISPEL: Blighted Blood (Entombed Sentinels) fast; Exploding Infection (Vashnik orange) staggered — it AoEs on removal",
+            "Eternal Nightfall (Malacrass): break the shield to stop the cast — no interrupt needed",
+          } },
+        { label = "Nek'zali the Soulcoiler",
+          boss  = "Nek'zali the Soulcoiler",
+          title = "=== NEK'ZALI THE SOULCOILER ===",
+          lines = {
+            "Never die in the Soulcoil Well and never let Restless Amani reach it — boss empowers for the rest of the fight",
+            "Essence Rend: run to the room edge, call for dispel, drop the puddle out of the way",
+            "Possession Barrage: tank runs away from the boss until it impacts",
+            "Intermission at 50%: melee + tanks group-soak Hungering Pyre, singles take Cremation on the leftover corpses",
+            "Lust on pull",
+          },
+          extraByDiff = {
+            [15] = { "Heroic+: add corpses only die permanently once burned by Hungering Pyre or Cremation" },
+          } },
+        { label = "Entombed Sentinels",
+          boss  = "Entombed Sentinels",
+          title = "=== ENTOMBED SENTINELS ===",
+          lines = {
+            "Tank the two sentinels 40y apart or Ula'tek's Dominance gives them 99% damage reduction",
+            "Mark of Acid / Mark of Blood: stay 40y from the OTHER boss or you collect stacks",
+            "Green (acid) side: burn Venom Coagulation slime on spawn, step on Toxic Droplets to squish them",
+            "Red (blood) side: everyone soaks Unstable Miasma at an edge; dispel Blighted Blood immediately",
+            "100 energy: Vitriolic Stasis wastes damage — pair Helical Toxins so your green orbs total 4",
+            "After intermission tanks taunt swap and bring both bosses to the same side",
+          },
+          extraByDiff = {
+            [15] = {
+              "Heroic: after soaking Unstable Miasma, stand next to another blood player to pass the debuff",
+              "Heroic: dodge the daggers the tiny slimes fire into the green boss",
+            },
+          } },
+        { label = "The Lost Explorers",
+          boss  = "The Lost Explorers",
+          title = "=== THE LOST EXPLORERS ===",
+          lines = {
+            "Mor'zahi at 100 energy = raid wipe — feed Disgusting Fish from Trader Gebbo's crates to reset it",
+            "Each tortollan can be fed ONCE — three resets total, so kill them before the fish runs out",
+            "Tank two bosses together; Gebbo wanders counter-clockwise on his own",
+            "Nama Shell Spin: dodge the 3 shells in the frontal cone",
+            "Iku Blink Nova: drag it away from raid, in the direction you want Iku to teleport",
+            "Gebbo Throw Junk: soak crates (watch bleed stacks) and find the fish",
+            "Fed bosses gain extras — Nama 3 group soaks, Iku Fire/Frost circles (walk into the OPPOSITE puddle), Gebbo bomb ring (mushroom-bounce it)",
+          },
+          extraByDiff = {
+            [15] = { "Heroic: only TWO bosses may be tanked together — all three = 99% damage reduction" },
+          } },
+        { label = "Vashnik the Malignant",
+          boss  = "Vashnik the Malignant",
+          title = "=== VASHNIK THE MALIGNANT ===",
+          lines = {
+            "Imbibe draws the two NEAREST fountains — tank in a different third of the room each cast to control the venoms",
+            "Plague Froth: spread and stand still so everyone else can dodge the waves",
+            "Purple altar: 5 slimes, AoE them, dodge the swirlies on death",
+            "Orange altar: 2 slimes, CC-able 60s, stagger the kills (DoT stacks)",
+            "Red altar: big slow CC-immune slime, splits into smalls when it dies",
+            "Red buff Siphon Blood: heal absorb — stand next to a player to siphon it off",
+            "Purple buff Stygian Infection: you drop void zones — keep them out of the raid",
+            "Orange buff Exploding Infection: stagger the dispels, each one AoEs",
+          },
+          extraByDiff = {
+            [15] = { "Heroic: soak the green Malignant Catalyst circles" },
+          } },
+        { label = "Sszorak",
+          boss  = "Sszorak",
+          title = "=== SSZORAK ===",
+          lines = {
+            "On pull, count the tornadoes in each third (1, 2, 3) — that is the Phase 2 wind order",
+            "Apex Predator: taunt swap so each tank eats one Ravage and one Mutilate",
+            "Ravage points AWAY from the raid, Mutilate points INTO the raid",
+            "Tempest: dodge the tornadoes; Raging Crosswinds: pair with the player whose cone points at you",
+            "Venomous Surge: drop the Cyst opposite the side the Phase 2 winds start from",
+            "P2 Howling Maelstrom: assigned popper hits the Cyst as each wind starts, knocking the raid against it",
+            "Dig In (~2 min): big damage-taken amp on the boss — burn every cooldown",
+          },
+          extraByDiff = {
+            [15] = { "Heroic: split into two groups, each group soaks one Mutilate" },
+          } },
+        { label = "The Twin Fangs",
+          boss  = "The Twin Fangs",
+          title = "=== THE TWIN FANGS ===",
+          lines = {
+            "Eternal Venom kills you at max stacks — Ravenous Feast is the only way to shed them",
+            "Vexhul: soak Caustic Globule orbs (+1 stack), dodge Stir the Depths waves (+1 stack)",
+            "Kill Venomous Emergence adds fast — they pile stacks on the raid",
+            "Ithraz Ravenous Feast: group soak removes stacks — go in whenever you are climbing",
+            "Coiling Ichor: run to the room edge before it expires so the pool lands out of the way",
+            "Stone Breaker (tank): remember the order the three soaks appeared and stand in them in that order",
+            "P2 Submerge: watch the orb ring in the middle and dodge the beam that tracks it",
+          },
+          extraByDiff = {
+            [15] = { "Heroic: three soak groups, one per Ravenous Feast circle; stack cap is lower — watch it" },
+          } },
+        { label = "The Coiled Altar",
+          boss  = "The Coiled Altar",
+          title = "=== THE COILED ALTAR ===",
+          lines = {
+            "P1 Zul'jan: assigned collectors carry Coalesced Venom to the drop point; tank aims Sever at the orbs there",
+            "Guillotine: stack the group soak, then run out",
+            "P2 Malacrass Dreadmarch: mind-controlled players walk UNDER the boss to be freed",
+            "Manifestation of Dread: LOOK AT the ghost to freeze it, look away to move it to the drop point",
+            "Soul Sever (tank) and Gloombomb: collect every clone or you die — spread for Gloombomb",
+            "Intermission: Zul'jan takes double damage during Ghastly Regeneration; step on Malacrass fragments, but not too many at once",
+            "P3: both phases run at once, and Soulbound means BOTH bosses must die together or the survivor gains 500% damage",
+            "Lust in Phase 3",
+          },
+          extraByDiff = {
+            [15] = {
+              "Heroic: each collected Coalesced Venom adds a raid DoT stack when it explodes",
+              "Heroic: two soak groups alternate Guillotine; focus and interrupt the Spiritcackle adds",
+            },
+          } },
+        { label = "Ula'tek",
+          boss  = "Ula'tek",
+          title = "=== ULA'TEK ===",
+          lines = {
+            "Eggs: pick them up and break them — stand in Spectral Coils or DPS the egg to 0 for a WEAKENED add",
+            "An egg that touches venom or finishes its cast hatches EMPOWERED — never let that happen",
+            "P1: one tank on the head, one on the tail; swap during Caustic Waves",
+            "Caustic Waves: watch Ula'tek's wings — waves come from boss AND tail",
+            "Spectral Coils: soak on both sides of the tail; Call of the Serpent spawns more eggs",
+            "Rage of the Shackled: burn Ula'tek's Heart, it takes double damage",
+            "P2: split sides for the Doomscale Wardens, gather every small egg plus the Doomscale Egg, dump all into the Doomscale Cauldron",
+            "P3: soak Serpent's Bite circles, stand where there are NO orbs for Caustic Waves, spread 5y for Volatile Purge, leave the platform on Circling Prey",
+            "Lust in Phase 3",
+          },
+          extraByDiff = {
+            [15] = {
+              "Heroic: weakened adds stack Poisonous Bite; empowered adds apply Petrifying Sting (AoE DoT + heal absorb)",
+              "Heroic: split Spectral Coils into two groups for the Soul Constrictor debuff",
+            },
+          } },
+        { label = "Tips",
+          title = "=== VENOMOUS ABYSS TIPS ===",
+          lines = {
+            "Route: Nek'zali, then two wings of two bosses, then Twin Fangs, Coiled Altar and Ula'tek from the central pit",
+            "Tier: Sentinels hands, Lost Explorers shoulders, Vashnik chest, Sszorak legs, Twin Fangs helm",
+            "Entrance: Vaults of Atal'Utek on The Coiled Isle — /way #2509 47.2 21.7",
+            "Mythic Coiled Altar and Ula'tek drop 344 (Myth 9/6)",
+          } },
+      },
+    },
+
+    ------------------------------------------------------------------
+    -- The Tidebound Grotto (1 boss lair, patch 12.1) — Mythic flex
+    ------------------------------------------------------------------
+    {
+      name = "The Tidebound Grotto",
+      tab  = "TG",
+      tier = "Midnight S2 lair (12.1)",
+      sections = {
+        { label = "Nymrissa Wavecaller",
+          boss  = "Nymrissa Wavecaller",
+          title = "=== NYMRISSA WAVECALLER ===",
+          lines = {
+            "One mechanic cycle repeats all fight — no phases",
+            "Kill the Bubblefin Murlocs before they reach the bubble",
+            "Chilling Frost: if targeted, walk slowly in one spot so your orbs clump together",
+            "Water Jet: tanks point the frontal away from the raid",
+            "Swirling Whirlpools: stand in the section with NO whirlpool — they drift into the center",
+            "Lust on pull",
+          },
+          extraByDiff = {
+            [15] = { "Heroic: soak Frost Orb before it explodes, but not several at once (DoT stacks)" },
+          } },
+        { label = "Tips",
+          title = "=== TIDEBOUND GROTTO TIPS ===",
+          lines = {
+            "Entrance: swim down at /way #2512 59.9 66.3 on The Coiled Isle",
+            "Queues like a Delve: World difficulty solo-queue up to 40, premade Normal/Heroic 30, Mythic flex 25",
+            "Only Season 2 boss with flexible Mythic, and it fills the Raid row of the Great Vault",
+            "No tier tokens — item level tracks the first Venomous Abyss boss",
+          } },
+      },
+    },
+
     ------------------------------------------------------------------
     -- The Voidspire (6 bosses) — tier tokens on bosses 2–5
     ------------------------------------------------------------------

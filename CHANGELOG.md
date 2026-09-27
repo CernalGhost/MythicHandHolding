@@ -1,5 +1,15 @@
 # Mythic Hand Holding - Changelog
 
+## 1.4.0
+
+- Season 2 (12.1) raid content: The Venomous Abyss (8 bosses) and The Tidebound Grotto lair (Nymrissa Wavecaller), with encounter IDs, ability spell IDs and per-difficulty callouts.
+- Season 2 raids are now the first two raid tabs; Season 1 raids unchanged.
+
+## 1.3.5
+
+- Sync repo version with the published release; 1.3.1-1.3.4 were release-pipeline iterations with no gameplay changes.
+- Releases are now cut from the version in the .toc, so main always matches what is on CurseForge.
+
 ## 1.3.0
 
 - Version bump for Midnight Season 2 M+ pool plus Midnight expansion raid mode (alpha) on one release line.
