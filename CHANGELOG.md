@@ -4,6 +4,10 @@
 
 - Right-click a section to choose which tip the next click sends (out of combat).
 
+## 1.4.1
+
+- Add Interface 120105 (Patch 12.1.5).
+
 ## 1.4.0
 
 - Season 2 (12.1) raid content: The Venomous Abyss (8 bosses) and The Tidebound Grotto lair (Nymrissa Wavecaller), with encounter IDs, ability spell IDs and per-difficulty callouts.

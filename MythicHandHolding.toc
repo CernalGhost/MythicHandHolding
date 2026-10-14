@@ -1,4 +1,4 @@
-## Interface: 110207, 110205, 110200, 120000, 120005, 120007, 120100
+## Interface: 110207, 110205, 110200, 120000, 120005, 120007, 120100, 120105
 ## Title: Mythic Hand Holding
 ## Notes: One-click party-chat callouts for Mythic+ bosses, interrupts, and tips.
 ## Author: CernalGhost
