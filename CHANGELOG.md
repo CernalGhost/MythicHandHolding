@@ -7,6 +7,10 @@
 - Classic clients hide the Mythic+ tab and the retail LFR/N/H/M buttons; WoW Forever uses the Classic Era pack for now.
 - Fix: in a raid group, tips now go to /ra instead of /p (which only reached your subgroup).
 
+## 1.5.0
+
+- Right-click a section to choose which tip the next click sends (out of combat).
+
 ## 1.4.1
 
 - Add Interface 120105 (Patch 12.1.5).

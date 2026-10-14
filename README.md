@@ -22,6 +22,8 @@ A World of Warcraft addon for **Midnight Season 2 Mythic+** and **Midnight raids
   - **WoW Forever:** uses the Classic Era pack until its own raids are known.
 - Each click sends **one line** to group chat (secure macro — one line per click): `/i` in instance groups, `/ra` in raids, `/p` in parties.
 - Multi-line sections **cycle** on repeated clicks; badge shows `0/N` … `N/N`.
+- **Right-click** a boss/section to pick which line the next click sends.
+- Info icon (retail): WoW restricts and throttles addon chat during Mythic+ runs — send key tips before starting the timer.
 - **Auto-selects** dungeon or raid when you zone into a tracked instance.
 - **Minimap button** (default hidden until you use `/mhh` or zone in); draggable around the rim.
 ## Install
