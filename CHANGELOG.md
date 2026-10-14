@@ -7,6 +7,10 @@
 - Classic clients hide the Mythic+ tab and the retail LFR/N/H/M buttons; WoW Forever uses the Classic Era pack for now.
 - Fix: in a raid group, tips now go to /ra instead of /p (which only reached your subgroup).
 
+## 1.4.1
+
+- Add Interface 120105 (Patch 12.1.5).
+
 ## 1.4.0
 
 - Season 2 (12.1) raid content: The Venomous Abyss (8 bosses) and The Tidebound Grotto lair (Nymrissa Wavecaller), with encounter IDs, ability spell IDs and per-difficulty callouts.
