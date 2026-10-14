@@ -1155,8 +1155,14 @@ local function BuildUI()
         GameTooltip:AddLine(section.title, 0.85, 0.85, 0.85, true)
       end
       GameTooltip:AddLine(" ")
-      for _, line in ipairs(SectionLinesForDifficulty(section)) do
-        GameTooltip:AddLine(line, 0.9, 0.9, 0.9, true)
+      -- Numbered to match the right-click menu; the next line to send is gold.
+      local nextIdx = self._lineIdx or 1
+      for i, line in ipairs(SectionLinesForDifficulty(section)) do
+        if i == nextIdx then
+          GameTooltip:AddLine(("%d. %s"):format(i, line), 1, 0.82, 0.4, true)
+        else
+          GameTooltip:AddLine(("%d. %s"):format(i, line), 0.9, 0.9, 0.9, true)
+        end
       end
       GameTooltip:AddLine(" ")
       local lineCount = #(self._broadcastLines or GetBroadcastLines(section))
