@@ -1,5 +1,5 @@
 --=====================================================================
---  MythicHandHolding  v1.4.0
+--  MythicHandHolding  v1.5.0
 --  Midnight Season 2 M+ dungeons; Midnight raids incl. Season 2 Venomous Abyss + Tidebound Grotto.
 --  New in 1.0.6: chat hyperlinks for spells and bosses.
 --    * SPELL_IDS table: known spell name -> spell ID.
@@ -10,7 +10,7 @@
 --      new IDs can be copy/pasted into BOSS_IDS.
 --=====================================================================
 
-local VERSION  = "1.4.0"
+local VERSION  = "1.5.0"
 
 MythicHandHoldingDB = MythicHandHoldingDB or {}
 
@@ -924,7 +924,9 @@ local function MakeSectionButton(parent, section, w, btnName, clickKey)
   local name = btnName or ("MHHSection" .. tostring(math.random(1, 99999999)))
   local b = CreateFrame("Button", name, parent, "SecureActionButtonTemplate")
   b:SetSize(w or SECTION_W, SECTION_H)
-  b:RegisterForClicks("AnyUp")
+  -- Left click only: right click opens the tip picker (OnMouseUp) and must
+  -- not fire the macro.
+  b:RegisterForClicks("LeftButtonUp")
   b._section = section
   b._lineIdx = 1
   b._cycleSent = 0
@@ -1122,6 +1124,30 @@ local function BuildUI()
       end
       UpdateLineBadge(b)
     end)
+    -- Right click: pick which line the next left click sends.  Insecure code
+    -- cannot send chat, so the menu only re-points the secure macro.
+    b:SetScript("OnMouseUp", function(self, button)
+      if button ~= "RightButton" then return end
+      local lines = SectionLinesForDifficulty(section)
+      if #lines == 0 then return end
+      MenuUtil.CreateContextMenu(self, function(_, root)
+        root:CreateTitle(section.label)
+        for i, line in ipairs(lines) do
+          -- Strip a trailing partial UTF-8 char left by the byte cut.
+          local text = #line > 60 and (line:sub(1, 57):gsub("[\128-\255]+$", "") .. "...") or line
+          root:CreateRadio(("%d. %s"):format(i, text),
+            function() return (self._lineIdx or 1) == i end,
+            function()
+              if InCombatLockdown() then
+                Print("can't change the next tip in combat.")
+                return
+              end
+              BuildSectionMacro(self, section, i)
+              UpdateLineBadge(self)
+            end)
+        end
+      end)
+    end)
     b:SetScript("OnEnter", function(self)
       GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
       GameTooltip:SetText(section.label, 1, 0.82, 0)
@@ -1156,6 +1182,9 @@ local function BuildUI()
         GameTooltip:AddLine("Next click sends the next line.", 0.5, 0.7, 0.5)
       else
         GameTooltip:AddLine("Click to broadcast to your group.", 0.6, 0.8, 0.6)
+      end
+      if lineCount > 1 then
+        GameTooltip:AddLine("Right-click to choose the next line.", 0.5, 0.7, 0.5)
       end
       GameTooltip:Show()
     end)
