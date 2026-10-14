@@ -22,7 +22,7 @@ A World of Warcraft **retail** addon for **Midnight Season 2 Mythic+** and **Mid
 ## Install
 
 1. Copy the `MythicHandHolding` folder to  
-   `World of Warcraft\_retail_\Interface\AddOns\MythicHandHolding\`
+   `World of Warcraft\_retail_\Interface\AddOns\MythicHandHolding\` (other clients: `_classic_`, `_anniversary_`, `_classic_era_`, …)
 2. `/reload`
 3. `/mhh ping` — should print version
 
