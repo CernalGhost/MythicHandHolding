@@ -1339,6 +1339,8 @@ local function BuildUI()
     GameTooltip:Show()
   end)
   mplusNote:SetScript("OnLeave", function() GameTooltip:Hide() end)
+  -- Retail only: Classic clients have no Mythic+ chat restriction.
+  if WOW_PROJECT_ID ~= WOW_PROJECT_MAINLINE then mplusNote:Hide() end
 
   if #DUNGEONS > 0 or #RAIDS > 0 then
     local startMode = pendingMode or MythicHandHoldingDB.contentMode or "mplus"
