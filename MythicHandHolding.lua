@@ -1127,7 +1127,7 @@ local function BuildUI()
     -- Right click: pick which line the next left click sends.  Insecure code
     -- cannot send chat, so the menu only re-points the secure macro.
     b:SetScript("OnMouseUp", function(self, button)
-      if button ~= "RightButton" then return end
+      if button ~= "RightButton" or not MenuUtil then return end
       local lines = SectionLinesForDifficulty(section)
       if #lines == 0 then return end
       MenuUtil.CreateContextMenu(self, function(_, root)
