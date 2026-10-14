@@ -1325,6 +1325,21 @@ local function BuildUI()
   end)
   sayCheck:SetScript("OnLeave", function() GameTooltip:Hide() end)
 
+  -- Small info icon: chat from addon buttons is blocked inside a running key.
+  local mplusNote = CreateFrame("Button", nil, f)
+  mplusNote:SetSize(16, 16)
+  mplusNote:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -10, 10)
+  mplusNote:SetNormalTexture("Interface\\Common\\help-i")
+  mplusNote:SetHighlightTexture("Interface\\Common\\help-i", "ADD")
+  mplusNote:SetScript("OnEnter", function(self)
+    GameTooltip:SetOwner(self, "ANCHOR_TOP")
+    GameTooltip:SetText("Mythic+ chat is blocked", 1, 0.82, 0)
+    GameTooltip:AddLine("WoW blocks addons from sending chat during a Mythic+ run.", 0.9, 0.9, 0.9, true)
+    GameTooltip:AddLine("Send the tips you need to party BEFORE you start the key.", 0.6, 0.8, 0.6, true)
+    GameTooltip:Show()
+  end)
+  mplusNote:SetScript("OnLeave", function() GameTooltip:Hide() end)
+
   if #DUNGEONS > 0 or #RAIDS > 0 then
     local startMode = pendingMode or MythicHandHoldingDB.contentMode or "mplus"
     if #ContentList(startMode) == 0 then
