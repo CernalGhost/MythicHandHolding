@@ -18,6 +18,7 @@ A World of Warcraft **retail** addon for **Midnight Season 2 Mythic+** and **Mid
 - Each click sends **one line** to party or instance/raid chat (secure macro — one line per click).
 - Multi-line sections **cycle** on repeated clicks; badge shows `0/N` … `N/N`.
 - **Right-click** a boss/section to pick which line the next click sends.
+- Info icon (retail): WoW restricts and throttles addon chat during Mythic+ runs — send key tips before starting the timer.
 - **Auto-selects** dungeon or raid when you zone into a tracked instance.
 - **Minimap button** (default hidden until you use `/mhh` or zone in); draggable around the rim.
 ## Install
