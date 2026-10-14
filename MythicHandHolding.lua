@@ -1123,6 +1123,8 @@ local function BuildUI()
         b._cycleSent = 0
       end
       UpdateLineBadge(b)
+      -- Redraw an open tooltip so the gold "next line" follows the click.
+      if GameTooltip:IsOwned(b) then b:GetScript("OnEnter")(b) end
     end)
     -- Right click: pick which line the next left click sends.  Insecure code
     -- cannot send chat, so the menu only re-points the secure macro.
