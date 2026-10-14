@@ -3,7 +3,7 @@
 A World of Warcraft **retail** addon for **Midnight Season 2 Mythic+** and **Midnight expansion raids**. One compact window, one click per party/raid chat callout — interrupts, boss mechanics, and tips.
 
 **Author:** CernalGhost  
-**Version:** 1.4.0  
+**Version:** 1.6.0  
 **Slash command:** `/mhh` or `/mythichandholding`  
 **Download:** [CurseForge](https://www.curseforge.com/wow/addons/mythic-hand-holding/preview) · [GitHub](https://github.com/CernalGhost/MythicHandHolding)
 
@@ -56,7 +56,8 @@ Enable **Load out of date AddOns** if the Interface number lags a patch.
 
 ## Requirements
 
-- Retail WoW (The War Within / Midnight). Not for Classic flavors.
+- Loads on Retail (The War Within / Midnight), Mists of Pandaria Classic, Burning Crusade Classic Anniversary, WoW Forever and Classic Era.
+- Built-in callouts cover Midnight content only. On Classic clients the window and slash commands work, but there are no dungeon or raid tips yet.
 - Designed for **Mythic+ and raid** party/instance chat. Uses secure action buttons; do not replace with `SendChatMessage` from addon code.
 
 ## Raids alpha (issue #2)

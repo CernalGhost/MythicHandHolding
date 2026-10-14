@@ -1,5 +1,9 @@
 # Mythic Hand Holding - Changelog
 
+## 1.6.0
+
+- Load on all current clients: Mists of Pandaria Classic (50504), Burning Crusade Classic Anniversary (20506), WoW Forever (16001) and Classic Era (11509). Callouts are still Midnight-only.
+
 ## 1.4.0
 
 - Season 2 (12.1) raid content: The Venomous Abyss (8 bosses) and The Tidebound Grotto lair (Nymrissa Wavecaller), with encounter IDs, ability spell IDs and per-difficulty callouts.
