@@ -3,7 +3,7 @@
 A World of Warcraft **retail** addon for **Midnight Season 2 Mythic+** and **Midnight expansion raids**. One compact window, one click per party/raid chat callout — interrupts, boss mechanics, and tips.
 
 **Author:** CernalGhost  
-**Version:** 1.4.1  
+**Version:** 1.5.0  
 **Slash command:** `/mhh` or `/mythichandholding`  
 **Download:** [CurseForge](https://www.curseforge.com/wow/addons/mythic-hand-holding/preview) · [GitHub](https://github.com/CernalGhost/MythicHandHolding)
 
@@ -17,6 +17,8 @@ A World of Warcraft **retail** addon for **Midnight Season 2 Mythic+** and **Mid
 - **Raid difficulty:** LFR / Normal / Heroic / Mythic buttons; auto-detects in-raid; difficulty-only tips via `extraByDiff`.
 - Each click sends **one line** to party or instance/raid chat (secure macro — one line per click).
 - Multi-line sections **cycle** on repeated clicks; badge shows `0/N` … `N/N`.
+- **Right-click** a boss/section to pick which line the next click sends.
+- Info icon (retail): WoW restricts and throttles addon chat during Mythic+ runs — send key tips before starting the timer.
 - **Auto-selects** dungeon or raid when you zone into a tracked instance.
 - **Minimap button** (default hidden until you use `/mhh` or zone in); draggable around the rim.
 ## Install

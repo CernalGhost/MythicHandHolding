@@ -1,5 +1,5 @@
 --=====================================================================
---  MythicHandHolding  v1.4.1
+--  MythicHandHolding  v1.5.0
 --  Midnight Season 2 M+ dungeons; Midnight raids incl. Season 2 Venomous Abyss + Tidebound Grotto.
 --  New in 1.0.6: chat hyperlinks for spells and bosses.
 --    * SPELL_IDS table: known spell name -> spell ID.
@@ -10,7 +10,7 @@
 --      new IDs can be copy/pasted into BOSS_IDS.
 --=====================================================================
 
-local VERSION  = "1.4.1"
+local VERSION  = "1.5.0"
 
 MythicHandHoldingDB = MythicHandHoldingDB or {}
 
@@ -924,7 +924,9 @@ local function MakeSectionButton(parent, section, w, btnName, clickKey)
   local name = btnName or ("MHHSection" .. tostring(math.random(1, 99999999)))
   local b = CreateFrame("Button", name, parent, "SecureActionButtonTemplate")
   b:SetSize(w or SECTION_W, SECTION_H)
-  b:RegisterForClicks("AnyUp")
+  -- Left click only: right click opens the tip picker (OnMouseUp) and must
+  -- not fire the macro.
+  b:RegisterForClicks("LeftButtonUp")
   b._section = section
   b._lineIdx = 1
   b._cycleSent = 0
@@ -1121,6 +1123,32 @@ local function BuildUI()
         b._cycleSent = 0
       end
       UpdateLineBadge(b)
+      -- Redraw an open tooltip so the gold "next line" follows the click.
+      if GameTooltip:IsOwned(b) then b:GetScript("OnEnter")(b) end
+    end)
+    -- Right click: pick which line the next left click sends.  Insecure code
+    -- cannot send chat, so the menu only re-points the secure macro.
+    b:SetScript("OnMouseUp", function(self, button)
+      if button ~= "RightButton" or not MenuUtil then return end
+      local lines = SectionLinesForDifficulty(section)
+      if #lines == 0 then return end
+      MenuUtil.CreateContextMenu(self, function(_, root)
+        root:CreateTitle(section.label)
+        for i, line in ipairs(lines) do
+          -- Strip a trailing partial UTF-8 char left by the byte cut.
+          local text = #line > 60 and (line:sub(1, 57):gsub("[\128-\255]+$", "") .. "...") or line
+          root:CreateRadio(("%d. %s"):format(i, text),
+            function() return (self._lineIdx or 1) == i end,
+            function()
+              if InCombatLockdown() then
+                Print("can't change the next tip in combat.")
+                return
+              end
+              BuildSectionMacro(self, section, i)
+              UpdateLineBadge(self)
+            end)
+        end
+      end)
     end)
     b:SetScript("OnEnter", function(self)
       GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
@@ -1129,8 +1157,14 @@ local function BuildUI()
         GameTooltip:AddLine(section.title, 0.85, 0.85, 0.85, true)
       end
       GameTooltip:AddLine(" ")
-      for _, line in ipairs(SectionLinesForDifficulty(section)) do
-        GameTooltip:AddLine(line, 0.9, 0.9, 0.9, true)
+      -- Numbered to match the right-click menu; the next line to send is gold.
+      local nextIdx = self._lineIdx or 1
+      for i, line in ipairs(SectionLinesForDifficulty(section)) do
+        if i == nextIdx then
+          GameTooltip:AddLine(("%d. %s"):format(i, line), 1, 0.82, 0.4, true)
+        else
+          GameTooltip:AddLine(("%d. %s"):format(i, line), 0.9, 0.9, 0.9, true)
+        end
       end
       GameTooltip:AddLine(" ")
       local lineCount = #(self._broadcastLines or GetBroadcastLines(section))
@@ -1156,6 +1190,9 @@ local function BuildUI()
         GameTooltip:AddLine("Next click sends the next line.", 0.5, 0.7, 0.5)
       else
         GameTooltip:AddLine("Click to broadcast to your group.", 0.6, 0.8, 0.6)
+      end
+      if lineCount > 1 then
+        GameTooltip:AddLine("Right-click to choose the next line.", 0.5, 0.7, 0.5)
       end
       GameTooltip:Show()
     end)
@@ -1287,6 +1324,23 @@ local function BuildUI()
     GameTooltip:Show()
   end)
   sayCheck:SetScript("OnLeave", function() GameTooltip:Hide() end)
+
+  -- Small info icon: chat from addon buttons is blocked inside a running key.
+  local mplusNote = CreateFrame("Button", nil, f)
+  mplusNote:SetSize(16, 16)
+  mplusNote:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -10, 10)
+  mplusNote:SetNormalTexture("Interface\\Common\\help-i")
+  mplusNote:SetHighlightTexture("Interface\\Common\\help-i", "ADD")
+  mplusNote:SetScript("OnEnter", function(self)
+    GameTooltip:SetOwner(self, "ANCHOR_TOP")
+    GameTooltip:SetText("Mythic+ chat limits", 1, 0.82, 0)
+    GameTooltip:AddLine("WoW restricts and throttles addon chat during a Mythic+ run, so some tips may not send.", 0.9, 0.9, 0.9, true)
+    GameTooltip:AddLine("Send the tips you need to party BEFORE you start the key.", 0.6, 0.8, 0.6, true)
+    GameTooltip:Show()
+  end)
+  mplusNote:SetScript("OnLeave", function() GameTooltip:Hide() end)
+  -- Retail only: Classic clients have no Mythic+ chat restriction.
+  if WOW_PROJECT_ID ~= WOW_PROJECT_MAINLINE then mplusNote:Hide() end
 
   if #DUNGEONS > 0 or #RAIDS > 0 then
     local startMode = pendingMode or MythicHandHoldingDB.contentMode or "mplus"
