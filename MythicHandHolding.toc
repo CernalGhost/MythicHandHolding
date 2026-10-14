@@ -11,4 +11,7 @@
 ## X-Website: https://github.com/CernalGhost/MythicHandHolding
 
 MythicHandHolding_Raids.lua
+MythicHandHolding_Vanilla.lua
+MythicHandHolding_TBC.lua
+MythicHandHolding_Mists.lua
 MythicHandHolding.lua

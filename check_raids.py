@@ -35,5 +35,14 @@ if src.count("{") != src.count("}"):
 # Spell names used in tips must exist in spellIds, else no hyperlink.
 assert "Eternal Venom" in src and "Ula'tek's Dominance" in src
 
+# Classic packs (MythicHandHolding_<flavor>.lua): balanced braces, every raid has a mapId.
+for pack, want in (("Vanilla", 7), ("TBC", 9), ("Mists", 5)):
+    psrc = open(f"MythicHandHolding_{pack}.lua", encoding="utf-8").read()
+    if psrc.count("{") != psrc.count("}"):
+        fail.append(f"{pack}: brace mismatch")
+    n, maps = psrc.count("name  ="), len(re.findall(r"mapId = \d+", psrc))
+    if n != want or maps != want:
+        fail.append(f"{pack}: expected {want} raids with mapId, found {n} raids / {maps} mapIds")
+
 print("\n".join(fail) if fail else f"OK - {len(raids)} raids: " + ", ".join(n for n, _ in raids))
 sys.exit(1 if fail else 0)

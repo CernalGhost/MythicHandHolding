@@ -89,7 +89,25 @@ local RAID_SPELL_BY_DIFF = {}
 -- Merge optional raid pack (MythicHandHolding_Raids.lua, alpha issue #2).
 -- Raid spells stay separate so M+ IDs (e.g. Blinding Light) are not overwritten.
 local RAIDS = {}
-if MHH_Raids then
+
+-- Client flavor from the TOC version: 1xxxx Classic Era, 2xxxx TBC Anniversary,
+-- 5xxxx MoP Classic, 110000+ retail.  WoW Forever (TOC 16xxx) runs on the
+-- retail engine but plays vanilla content, so it is detected by project ID
+-- (WOW_PROJECT_CAMELOT = 18) and uses the vanilla pack until it has its own.
+-- Retail Midnight content and its Encounter Journal IDs would be wrong there.
+local TOC_VERSION = select(4, GetBuildInfo())
+local FLAVOR = (WOW_PROJECT_ID == 18 and "forever")
+            or (TOC_VERSION >= 110000 and "retail")
+            or (TOC_VERSION >= 50000 and "mists")
+            or (TOC_VERSION >= 20000 and "tbc")
+            or "vanilla"
+local IS_RETAIL = (FLAVOR == "retail")
+local CLASSIC_PACK = not IS_RETAIL and MHH_Classic
+                     and (MHH_Classic[FLAVOR] or MHH_Classic.vanilla) or nil
+
+if not IS_RETAIL then
+  RAIDS = CLASSIC_PACK and CLASSIC_PACK.raids or {}
+elseif MHH_Raids then
   for name, id in pairs(MHH_Raids.bossIds or {}) do
     BOSS_IDS[name] = id
     RAID_BOSS_NAMES[name] = true
@@ -533,6 +551,11 @@ local DUNGEONS = {
   },
 }
 
+-- Midnight dungeons only exist on retail; Classic packs may add their own.
+if not IS_RETAIL then
+  DUNGEONS = CLASSIC_PACK and CLASSIC_PACK.dungeons or {}
+end
+
 
 --=====================================================================
 --  STATE
@@ -769,6 +792,8 @@ local function CurrentChatSlash()
   if inInst and (instType == "party" or instType == "raid") then
     if IsInGroup(2) and not IsInGroup(1) then return "/i" end
   end
+  -- /p in a raid only reaches your 5-man subgroup.
+  if IsInRaid() then return "/ra" end
   if IsInGroup() then return "/p" end
   return nil
 end
@@ -1046,8 +1071,10 @@ local function BuildUI()
     local raidOn = (currentMode == "raid")
     modeMplus:SetEnabled(raidOn)
     modeRaid:SetEnabled(not raidOn)
+    -- No dungeon list (Classic) = no M+ tab; LFR/N/H/M journal IDs are retail-only.
+    if #DUNGEONS == 0 then modeMplus:Hide(); modeRaid:Hide() end
     for _, b in ipairs(diffButtons) do
-      if raidOn then b:Show() else b:Hide() end
+      if raidOn and IS_RETAIL then b:Show() else b:Hide() end
     end
     if raidOn then SyncRaidDiff() end
   end
@@ -1411,11 +1438,15 @@ end
 --=====================================================================
 local function FindContentForCurrentInstance()
   if not IsInInstance() then return nil end
-  local name, instType = GetInstanceInfo()
+  local name, instType, _, _, _, _, _, instanceID = GetInstanceInfo()
   if not name or name == "" then return nil end
   local n = Norm(name)
   local mode = (instType == "raid") and "raid" or "mplus"
   local list = ContentList(mode)
+  -- Map ID first: Classic instance names vary by client and locale.
+  for i, entry in ipairs(list) do
+    if entry.mapId and entry.mapId == instanceID then return mode, i, entry end
+  end
   for i, entry in ipairs(list) do
     local dn = Norm(entry.name)
     if n == dn or n:find(dn, 1, true) or dn:find(n, 1, true) then

@@ -2,7 +2,10 @@
 
 ## 1.6.0
 
-- Load on all current clients: Mists of Pandaria Classic (50504), Burning Crusade Classic Anniversary (20506), WoW Forever (16001) and Classic Era (11509). Callouts are still Midnight-only.
+- Load on all current clients: Mists of Pandaria Classic (50504), Burning Crusade Classic Anniversary (20506), WoW Forever (16001) and Classic Era (11509).
+- Raid tips for every Classic client: 7 Classic Era raids, 9 TBC raids, 5 MoP raids. Each client only shows its own; raids auto-open on zone-in by instance ID.
+- Classic clients hide the Mythic+ tab and the retail LFR/N/H/M buttons; WoW Forever uses the Classic Era pack for now.
+- Fix: in a raid group, tips now go to /ra instead of /p (which only reached your subgroup).
 
 ## 1.4.0
 
