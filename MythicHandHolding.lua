@@ -1,5 +1,5 @@
 --=====================================================================
---  MythicHandHolding  v1.6.0
+--  MythicHandHolding  v1.7.0
 --  Midnight Season 2 M+ dungeons; Midnight raids incl. Season 2 Venomous Abyss + Tidebound Grotto.
 --  New in 1.0.6: chat hyperlinks for spells and bosses.
 --    * SPELL_IDS table: known spell name -> spell ID.
