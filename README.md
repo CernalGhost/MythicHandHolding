@@ -3,7 +3,7 @@
 A World of Warcraft addon for **Midnight Season 2 Mythic+** and **Midnight raids** on retail, plus **raid tips for every Classic client** (Classic Era, TBC Anniversary, MoP Classic). One compact window, one click per party/raid chat callout — interrupts, boss mechanics, and tips.
 
 **Author:** CernalGhost  
-**Version:** 1.6.0  
+**Version:** 1.7.0  
 **Slash command:** `/mhh` or `/mythichandholding`  
 **Download:** [CurseForge](https://www.curseforge.com/wow/addons/mythic-hand-holding/preview) · [GitHub](https://github.com/CernalGhost/MythicHandHolding)
 
@@ -13,7 +13,7 @@ A World of Warcraft addon for **Midnight Season 2 Mythic+** and **Midnight raids
 
 - Movable panel (~224px wide) with **M+ / Raid** mode toggle and content dropdown.
 - **Mythic+:** eight Season 2 dungeons (Altar of Fangs, Murder Row, Den of Nalorakk, The Blinding Vale, Voidscar Arena, King's Rest, Temple of Sethraliss, Ruby Life Pools).
-- **Raids (alpha):** Midnight expansion — The Voidspire (6), The Dreamrift (1), March on Quel'Danas (2), Sporefall / Rotmire (12.0.7).
+- **Raids (alpha):** Midnight — The Unbinding of Kith'ix (12.1.5 lair), The Venomous Abyss (8) and The Tidebound Grotto (12.1), The Voidspire (6), The Dreamrift (1), March on Quel'Danas (2), Sporefall / Rotmire (12.0.7).
 - **Raid difficulty (retail):** LFR / Normal / Heroic / Mythic buttons; auto-detects in-raid; difficulty-only tips via `extraByDiff`.
 - **Classic raids:** the addon picks the pack for the client it runs on:
   - **Classic Era / Hardcore:** Molten Core, Onyxia's Lair, Blackwing Lair, Zul'Gurub, Ruins of Ahn'Qiraj, Temple of Ahn'Qiraj, Naxxramas.
