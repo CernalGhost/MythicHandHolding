@@ -1,5 +1,6 @@
 --=====================================================================
 --  MythicHandHolding — Raid content (alpha, issue #2)
+--  Midnight 12.1.5: The Unbinding of Kith'ix (lair).
 --  Midnight Season 2 (12.1): The Venomous Abyss, The Tidebound Grotto.
 --  Midnight Season 1: Voidspire, Dreamrift, March on Quel'Danas, Sporefall (12.0.7).
 --
@@ -21,6 +22,8 @@ MHH_Raids = {
   -- EJ instance IDs: Voidspire 1307, Dreamrift 1314, Quel'Danas 1308,
   -- Sporefall 1305, Midnight world bosses 1312.
   bossIds = {
+    -- Patch 12.1.5: The Unbinding of Kith'ix lair (EJ instance 1324)
+    ["Kith'ix"]                        = 2896,
     -- Season 2 (12.1): The Venomous Abyss (EJ instance 1320)
     ["Nek'zali the Soulcoiler"]       = 2888,
     ["Nek'zali"]                       = 2888,
@@ -62,6 +65,7 @@ MHH_Raids = {
 
   -- Optional: pin EJ instance IDs for /mhh ej name matching.
   instanceIds = {
+    ["The Unbinding of Kith'ix"] = 1324,
     ["The Venomous Abyss"]    = 1320,
     ["The Tidebound Grotto"]  = 1317,
     ["The Voidspire"]         = 1307,
@@ -449,6 +453,43 @@ MHH_Raids = {
     ["Frost Orb"] = 1313402,
     ["Swirling Whirlpools"] = 1258668,
     ["Water Jet"] = 1258901,
+    -- Kith'ix (The Unbinding of Kith'ix, 12.1.5)
+    ["Abyssal Grasp"] = 1303406,
+    ["Commanding Presence"] = 1305008,
+    ["Dark Devastation"] = 1304930,
+    ["Dark Frenzy"] = 1303260,
+    ["Devastated"] = 1304948,
+    ["Digestive Juices"] = 1302319,
+    ["Divine Radiance"] = 1303169,
+    ["Eclipse Fragment"] = 1308674,
+    ["Eightfold Eclipse"] = 1301479,
+    ["Exhausted"] = 1307662,
+    ["Explosive Restabilization"] = 1318472,
+    ["Extinguish"] = 1304424,
+    ["Fixate"] = 1302295,
+    ["Gut Reaction"] = 1302117,
+    ["Incubation"] = 1307407,
+    ["Last Light"] = 1305427,
+    ["Light's Embrace"] = 1304508,
+    ["Lost Refulgence"] = 1308675,
+    ["Luminous Grace"] = 1305428,
+    ["Mindsting"] = 1304040,
+    ["Negation"] = 1318467,
+    ["Nightfall"] = 1302705,
+    ["Null Gate"] = 1308873,
+    ["Nullify"] = 1308875,
+    ["Nullshards"] = 1308881,
+    ["Overwhelming Fear"] = 1304046,
+    ["Refulgent Bulwark"] = 1302952,
+    ["Stygian Howl"] = 1301110,
+    ["Suffocating Darkness"] = 1302951,
+    ["Suffocation"] = 1303257,
+    ["Twisted Appendage"] = 1303681,
+    ["Unspeakable Horrors"] = 1304045,
+    ["Venom Roar"] = 1302884,
+    ["Voidscar"] = 1304950,
+    ["Voidswarm"] = 1301511,
+    ["Voidweave"] = 1302333,
   },
 
   -- Optional per-difficulty spell overrides (merged on top when that diff is active).
@@ -456,6 +497,55 @@ MHH_Raids = {
   },
 
   raids = {
+    ------------------------------------------------------------------
+    -- The Unbinding of Kith'ix (1 boss lair, patch 12.1.5) — Mythic flex
+    -- IDs from the DBM-Lairs-Midnight module (encounter 2896, EJ 1324, map 3095).
+    ------------------------------------------------------------------
+    {
+      name = "The Unbinding of Kith'ix",
+      tab  = "UK",
+      tier = "Midnight 12.1.5 lair",
+      mapId = 3095,  -- instance map ID (DBM SetZone) for auto-open on zone-in
+      sections = {
+        { label = "Kith'ix",
+          boss  = "Kith'ix",
+          title = "=== KITH'IX ===",
+          lines = {
+            "Voidswarm: swap to the adds NOW — every aqir must be dead before Kith'ix hits 100 energy or they gain Dark Frenzy in the intermission",
+            "Commanding Presence: adds next to the boss take almost no damage — one tank holds Kith'ix away, the other drags the Venomous Hulk onto the Voidweaver",
+            "Kill Hulk and Voidweaver together; Nightfall raid damage ramps the longer the Voidweaver lives. Face Venom Roar away from the raid",
+            "Bomber Beetle Fixate: kite it away from the raid and let them pop one at a time — Digestive Juices stacks",
+            "Unspeakable Horrors: run OUT first, healers dispel Overwhelming Fear only once the target is alone",
+            "Extinguish: everyone grabs a Light's Embrace spark from Liadrin before it lands (8s buff, 90% less Shadow damage)",
+            "Dark Devastation: taunt swap every cast, tank takes the circle 15y from the raid with a defensive",
+            "Twisted Appendage: get out of the marked ground",
+            "100 energy intermission: stay inside Liadrin's Refulgent Bulwark; healers burn through Abyssal Grasp absorbs before the tentacle drags them into the dark",
+            "Every Divine Radiance stuns the boss 8s but leaves Liadrin Exhausted — the darkness hits harder each cycle, so push the boss",
+            "25% Stygian Howl: Last Light full heal + Luminous Grace (+50% damage) — lust and dump every cooldown here",
+            "Final phase Null Gate: marked players spread and step 5y off their gate; dodge the Nullshards motes, Nullify stacks kill",
+            "Eightfold Eclipse: Kith'ix must die before the 8th eclipse or the raid does",
+          },
+          extraByDiff = {
+            [15] = {
+              "Heroic+: Incubation — kill the eggs dead aqir leave before Mindstingers hatch (Mindsting stun + Nature DoT)",
+              "Heroic+: Dark Devastation leaves a Voidscar — tanks drop it at the room edge and keep a path to Liadrin",
+              "Heroic+: intermission Eclipse Fragments fly at Liadrin — intercept them spread out (Lost Refulgence DoT shares within 3y) or her bubble shrinks",
+            },
+            [16] = {
+              "Mythic: Bomber Beetles leave eggs too; Nullshards kill at 3 stacks",
+              "Mythic: Negation — tanks swap, the debuffed tank runs into a Null Gate to clear it before it expires (Explosive Restabilization wipes gates and motes within 10y)",
+            },
+          } },
+        { label = "Tips",
+          title = "=== UNBINDING OF KITH'IX TIPS ===",
+          lines = {
+            "Entrance: NE corner of The Underbelly under the Vaults of Atal'Utek, Coiled Isle — /way #2613 74.0 7.4 (patrols, move as a group)",
+            "Story / LFR / Normal / Heroic / Mythic flex 25 — the kill counts as one boss toward the Great Vault raid row (Story Mode does not)",
+            "No tier tokens — loot is LFR 285 / N 298 / H 311 / M 324; Mythic can drop Libram of the Matriarch (Liadrin wings glyph)",
+          } },
+      },
+    },
+
     ------------------------------------------------------------------
     -- The Venomous Abyss (8 bosses, patch 12.1 / Season 2)
     -- Boss 1, then two wings of two, then bosses 6-8 from the central pit.

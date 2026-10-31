@@ -1,5 +1,9 @@
 # Mythic Hand Holding - Changelog
 
+## 1.7.0
+
+- Patch 12.1.5 raid: The Unbinding of Kith'ix (Kith'ix lair) as the first raid tab, with encounter/instance IDs, 37 ability spell IDs, Heroic and Mythic callouts, entrance and loot tips. Auto-opens on zone-in by map ID.
+
 ## 1.6.0
 
 - Load on all current clients: Mists of Pandaria Classic (50504), Burning Crusade Classic Anniversary (20506), WoW Forever (16001) and Classic Era (11509).
